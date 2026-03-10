@@ -1,38 +1,65 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { db } from "./db";
+import { employees, leaves, meals, type InsertEmployee, type InsertLeave, type InsertMeal } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getEmployees(): Promise<any[]>;
+  createEmployee(employee: InsertEmployee): Promise<any>;
+  deleteEmployee(id: number): Promise<void>;
+  
+  getLeaves(): Promise<any[]>;
+  createLeave(leave: InsertLeave): Promise<any>;
+  deleteLeave(id: number): Promise<void>;
+  
+  getMeals(): Promise<any[]>;
+  setMeal(meal: InsertMeal): Promise<any>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  async getEmployees() {
+    return await db.select().from(employees);
   }
-
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async createEmployee(employee: InsertEmployee) {
+    const [res] = await db.insert(employees).values(employee).returning();
+    return res;
   }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
+  async deleteEmployee(id: number) {
+    await db.delete(employees).where(eq(employees.id, id));
+  }
+  
+  async getLeaves() {
+    return await db.select().from(leaves);
+  }
+  async createLeave(leave: InsertLeave) {
+    const [res] = await db.insert(leaves).values(leave).returning();
+    return res;
+  }
+  async deleteLeave(id: number) {
+    await db.delete(leaves).where(eq(leaves.id, id));
+  }
+  
+  async getMeals() {
+    return await db.select().from(meals);
+  }
+  async setMeal(meal: InsertMeal) {
+    const existing = await db.select().from(meals).where(
+      and(
+        eq(meals.employeeId, meal.employeeId),
+        eq(meals.nepaliMonth, meal.nepaliMonth),
+        eq(meals.day, meal.day)
+      )
     );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+    if (existing.length > 0) {
+      const [res] = await db.update(meals)
+        .set({ hasMeal: meal.hasMeal })
+        .where(eq(meals.id, existing[0].id))
+        .returning();
+      return res;
+    } else {
+      const [res] = await db.insert(meals).values(meal).returning();
+      return res;
+    }
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
