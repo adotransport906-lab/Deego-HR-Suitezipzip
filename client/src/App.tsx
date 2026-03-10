@@ -9,15 +9,17 @@ import NotFound from "@/pages/not-found";
 import Employees from "@/pages/Employees";
 import LeaveReport from "@/pages/LeaveReport";
 import MealExpenses from "@/pages/MealExpenses";
+import Overall from "@/pages/Overall";
 
 function Router() {
   return (
     <Layout>
       <Switch>
         <Route path="/">
-          {/* Default redirect to employees */}
-          {() => <Redirect to="/employees" />}
+          {/* Default redirect to overall */}
+          {() => <Redirect to="/overall" />}
         </Route>
+        <Route path="/overall" component={Overall} />
         <Route path="/employees" component={Employees} />
         <Route path="/leaves" component={LeaveReport} />
         <Route path="/meals" component={MealExpenses} />

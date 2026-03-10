@@ -1,10 +1,11 @@
 import { Link, useLocation } from "wouter";
-import { Users, Calendar, Utensils, Building2, Menu } from "lucide-react";
+import { Users, Calendar, Utensils, Building2, Menu, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 const NAV_ITEMS = [
+  { name: "Overall", href: "/overall", icon: BarChart3 },
   { name: "Employees", href: "/employees", icon: Users },
   { name: "Leave Report", href: "/leaves", icon: Calendar },
   { name: "Meal Expenses", href: "/meals", icon: Utensils },
