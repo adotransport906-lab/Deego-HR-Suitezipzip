@@ -51,7 +51,7 @@ export class DatabaseStorage implements IStorage {
     );
     if (existing.length > 0) {
       const [res] = await db.update(meals)
-        .set({ hasMeal: meal.hasMeal })
+        .set({ mealStatus: meal.mealStatus })
         .where(eq(meals.id, existing[0].id))
         .returning();
       return res;

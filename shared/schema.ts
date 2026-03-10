@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -22,7 +22,7 @@ export const meals = pgTable("meals", {
   employeeId: integer("employee_id").notNull(),
   nepaliMonth: integer("nepali_month").notNull(),
   day: integer("day").notNull(),
-  hasMeal: boolean("has_meal").notNull().default(false),
+  mealStatus: text("meal_status").notNull().default("none"),
 });
 
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true });

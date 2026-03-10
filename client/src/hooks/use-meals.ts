@@ -44,7 +44,7 @@ export function useToggleMeal() {
 
         if (existingIndex >= 0) {
           const updated = [...old];
-          updated[existingIndex] = { ...updated[existingIndex], hasMeal: newMeal.hasMeal };
+          updated[existingIndex] = { ...updated[existingIndex], mealStatus: newMeal.mealStatus };
           return updated;
         }
         

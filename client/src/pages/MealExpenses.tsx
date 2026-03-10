@@ -4,7 +4,9 @@ import { useMeals, useToggleMeal } from "@/hooks/use-meals";
 import { NEPALI_MONTHS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Check, X, UtensilsCrossed } from "lucide-react";
+import { Check, X, UtensilsCrossed, Egg } from "lucide-react";
+
+type MealStatus = "none" | "meal" | "meal_with_egg";
 
 export default function MealExpenses() {
   const [selectedMonth, setSelectedMonth] = useState(1);
@@ -12,18 +14,56 @@ export default function MealExpenses() {
   const { data: meals, isLoading: loadingMeals } = useMeals();
   const toggleMeal = useToggleMeal();
 
-  const getMealStatus = (empId: number, day: number) => {
+  const getMealStatus = (empId: number, day: number): MealStatus => {
     const meal = meals?.find(m => m.employeeId === empId && m.nepaliMonth === selectedMonth && m.day === day);
-    return meal?.hasMeal ?? false;
+    return (meal?.mealStatus as MealStatus) ?? "none";
   };
 
-  const handleToggle = (empId: number, day: number, currentState: boolean) => {
+  const getNextStatus = (currentStatus: MealStatus): MealStatus => {
+    const cycle: Record<MealStatus, MealStatus> = {
+      none: "meal",
+      meal: "meal_with_egg",
+      meal_with_egg: "none"
+    };
+    return cycle[currentStatus];
+  };
+
+  const handleToggle = (empId: number, day: number) => {
+    const currentStatus = getMealStatus(empId, day);
+    const nextStatus = getNextStatus(currentStatus);
     toggleMeal.mutate({
       employeeId: empId,
       nepaliMonth: selectedMonth,
       day,
-      hasMeal: !currentState
+      mealStatus: nextStatus
     });
+  };
+
+  const renderMealIcon = (status: MealStatus) => {
+    switch (status) {
+      case "none":
+        return <X className="w-4 h-4 opacity-30" />;
+      case "meal":
+        return <Check className="w-5 h-5" />;
+      case "meal_with_egg":
+        return (
+          <div className="flex items-center gap-0.5">
+            <Check className="w-5 h-5" />
+            <Egg className="w-3 h-3" />
+          </div>
+        );
+    }
+  };
+
+  const getStatusColor = (status: MealStatus) => {
+    switch (status) {
+      case "none":
+        return "bg-transparent text-slate-300";
+      case "meal":
+        return "bg-emerald-500/10 text-emerald-600";
+      case "meal_with_egg":
+        return "bg-blue-500/10 text-blue-600";
+    }
   };
 
   const isLoading = loadingEmps || loadingMeals;
@@ -32,7 +72,7 @@ export default function MealExpenses() {
     <div className="space-y-8 flex flex-col h-[calc(100vh-6rem)]">
       <div className="shrink-0">
         <h1 className="text-3xl font-display font-bold text-foreground">Meal Expenses</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Track daily meal consumption for accurate expensing.</p>
+        <p className="text-muted-foreground mt-1 text-sm">Track daily meal consumption for accurate expensing. Click cells to cycle: ❌ (No Meal) → ✅ (Meal) → ✅🥚 (Meal with Egg).</p>
       </div>
 
       <div className="flex flex-wrap gap-2 shrink-0">
@@ -90,31 +130,20 @@ export default function MealExpenses() {
                     
                     {Array.from({ length: 31 }).map((_, i) => {
                       const day = i + 1;
-                      const hasMeal = getMealStatus(emp.id, day);
+                      const status = getMealStatus(emp.id, day);
                       
                       return (
                         <td 
                           key={day} 
-                          onClick={() => handleToggle(emp.id, day, hasMeal)}
+                          onClick={() => handleToggle(emp.id, day)}
                           className="p-0 border-b border-r cursor-pointer relative"
                         >
                           <div className={cn(
                             "w-full h-full min-h-[52px] flex items-center justify-center transition-all group/cell",
-                            hasMeal 
-                              ? "bg-emerald-500/10 hover:bg-destructive/10 text-emerald-600 hover:text-destructive" 
-                              : "bg-transparent text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-500"
+                            getStatusColor(status),
+                            "hover:bg-muted/20"
                           )}>
-                            {hasMeal ? (
-                              <>
-                                <Check className="w-5 h-5 group-hover/cell:hidden" />
-                                <X className="w-5 h-5 hidden group-hover/cell:block" />
-                              </>
-                            ) : (
-                              <>
-                                <X className="w-4 h-4 opacity-30 group-hover/cell:hidden" />
-                                <Check className="w-5 h-5 hidden group-hover/cell:block" />
-                              </>
-                            )}
+                            {renderMealIcon(status)}
                           </div>
                         </td>
                       )

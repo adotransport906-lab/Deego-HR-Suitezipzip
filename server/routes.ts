@@ -109,13 +109,13 @@ export async function registerRoutes(
           employeeId: emp1.id,
           nepaliMonth: 1,
           day: 1,
-          hasMeal: true
+          mealStatus: "meal"
         });
         await storage.setMeal({
           employeeId: emp2.id,
           nepaliMonth: 1,
           day: 1,
-          hasMeal: false
+          mealStatus: "none"
         });
       }
     } catch (e) {
