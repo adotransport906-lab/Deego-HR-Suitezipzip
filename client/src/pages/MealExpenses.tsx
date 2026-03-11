@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useEmployees } from "@/hooks/use-employees";
 import { useMeals, useToggleMeal } from "@/hooks/use-meals";
-import { NEPALI_MONTHS, getDayOfWeek } from "@/lib/constants";
+import { NEPALI_MONTHS } from "@/lib/constants";
+import { getCurrentNepaliDate, getDaysInNepaliMonth, getMonthStartDayOfWeek } from "@/lib/nepaliDate";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Check, X, UtensilsCrossed, Egg } from "lucide-react";
 
 type MealStatus = "none" | "meal" | "meal_with_egg";
+
+const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function MealExpenses() {
   const [selectedYear, setSelectedYear] = useState(2082);
@@ -14,6 +17,13 @@ export default function MealExpenses() {
   const { data: employees, isLoading: loadingEmps } = useEmployees();
   const { data: meals, isLoading: loadingMeals } = useMeals();
   const toggleMeal = useToggleMeal();
+
+  // Initialize with current Nepali date
+  useEffect(() => {
+    const today = getCurrentNepaliDate();
+    setSelectedYear(today.year);
+    setSelectedMonth(today.month);
+  }, []);
 
   const getMealStatus = (empId: number, day: number): MealStatus => {
     const meal = meals?.find(m => m.employeeId === empId && m.nepaliYear === selectedYear && m.nepaliMonth === selectedMonth && m.day === day);
@@ -69,12 +79,14 @@ export default function MealExpenses() {
   };
 
   const isLoading = loadingEmps || loadingMeals;
+  const daysInMonth = getDaysInNepaliMonth(selectedYear, selectedMonth);
+  const monthStartDay = getMonthStartDayOfWeek(selectedYear, selectedMonth);
 
   return (
     <div className="space-y-8 flex flex-col h-[calc(100vh-6rem)]">
       <div className="shrink-0">
         <h1 className="text-3xl font-display font-bold text-foreground">Meal Expenses</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Track daily meal consumption for accurate expensing. Meal = Rs. 120, Meal with Egg = Rs. 145</p>
+        <p className="text-muted-foreground mt-1 text-sm">Meal = Rs. 120, Meal with Egg = Rs. 145. Click to cycle through states.</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 shrink-0">
@@ -133,10 +145,10 @@ export default function MealExpenses() {
                   <th className="sticky top-0 left-0 z-30 bg-muted/95 backdrop-blur px-4 py-3 text-left font-bold text-foreground border-b border-r min-w-[200px] shadow-[1px_1px_0_0_hsl(var(--border))]">
                     Employee Name
                   </th>
-                  {Array.from({ length: 31 }).map((_, i) => {
+                  {Array.from({ length: daysInMonth }).map((_, i) => {
                     const day = i + 1;
-                    const dayOfWeek = getDayOfWeek(selectedMonth, day);
-                    const dayAbbr = dayOfWeek.substring(0, 3);
+                    const dayOfWeekIdx = (monthStartDay + i) % 7;
+                    const dayAbbr = DAYS_OF_WEEK[dayOfWeekIdx];
                     return (
                       <th key={i} className="sticky top-0 z-20 bg-muted/95 backdrop-blur py-2 px-1 border-b border-r text-center font-bold text-foreground min-w-[48px] shadow-[0_1px_0_0_hsl(var(--border))]">
                         <div className="flex flex-col items-center gap-0.5">
@@ -158,7 +170,7 @@ export default function MealExpenses() {
                       </div>
                     </td>
                     
-                    {Array.from({ length: 31 }).map((_, i) => {
+                    {Array.from({ length: daysInMonth }).map((_, i) => {
                       const day = i + 1;
                       const status = getMealStatus(emp.id, day);
                       

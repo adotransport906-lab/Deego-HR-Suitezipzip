@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useEmployees } from "@/hooks/use-employees";
 import { useLeaves, useCreateLeave, useDeleteLeave } from "@/hooks/use-leaves";
 import { NEPALI_MONTHS } from "@/lib/constants";
+import { getCurrentNepaliDate, getDaysInNepaliMonth } from "@/lib/nepaliDate";
+import { getMonthCalendar } from "@/lib/calendarUtils";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar as CalendarIcon, Plus, Info, User, X, CheckCircle2 } from "lucide-react";
@@ -23,10 +24,12 @@ export default function LeaveReport() {
   const createLeave = useCreateLeave();
   const deleteLeave = useDeleteLeave();
 
-  // Form State for single add
-  const [formEmpId, setFormEmpId] = useState("");
-  const [formMonth, setFormMonth] = useState(selectedMonth.toString());
-  const [formDay, setFormDay] = useState("");
+  // Initialize with current Nepali date
+  useEffect(() => {
+    const today = getCurrentNepaliDate();
+    setSelectedYear(today.year);
+    setSelectedMonth(today.month);
+  }, []);
 
   const monthLeaves = leaves?.filter(l => l.nepaliYear === selectedYear && l.nepaliMonth === selectedMonth) || [];
   
@@ -36,22 +39,9 @@ export default function LeaveReport() {
     leavesByDay.set(l.day, [...existing, l]);
   });
 
-  const handleAddLeave = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formEmpId || !formMonth || !formDay) return;
-    
-    createLeave.mutate({
-      employeeId: Number(formEmpId),
-      nepaliYear: selectedYear,
-      nepaliMonth: Number(formMonth),
-      day: Number(formDay)
-    }, {
-      onSuccess: () => {
-        setIsAddOpen(false);
-        setFormEmpId("");
-        setFormDay("");
-      }
-    });
+  const handleAddLeave = (selectedDay: number) => {
+    if (!selectedDay) return;
+    setMultiSelectDay(selectedDay);
   };
 
   const handleAddMultipleLeaves = () => {
@@ -73,77 +63,26 @@ export default function LeaveReport() {
   const getEmployee = (id: number) => employees?.find(e => e.id === id);
   const detailLeaves = detailDay ? (leavesByDay.get(detailDay) || []) : [];
 
+  const calendarDays = getMonthCalendar(selectedYear, selectedMonth);
+  const daysInMonth = getDaysInNepaliMonth(selectedYear, selectedMonth);
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-display font-bold text-foreground">Leave Report</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Track team attendance and scheduled time off.</p>
+          <p className="text-muted-foreground mt-1 text-sm">Click on any date to add leaves for multiple employees.</p>
         </div>
-
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger asChild>
-            <Button className="rounded-xl shadow-lg shadow-primary/20">
-              <Plus className="w-4 h-4 mr-2" /> Add Leave
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] rounded-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-display">Log Employee Leave</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleAddLeave} className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold">Employee</label>
-                <Select value={formEmpId} onValueChange={setFormEmpId} required>
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue placeholder="Select an employee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {employees?.map(emp => (
-                      <SelectItem key={emp.id} value={emp.id.toString()}>
-                        {emp.name} <span className="text-muted-foreground text-xs ml-2">({emp.employeeId})</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold">Nepali Month</label>
-                <Select value={formMonth} onValueChange={setFormMonth} required>
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue placeholder="Select month" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {NEPALI_MONTHS.map(m => (
-                      <SelectItem key={m.value} value={m.value.toString()}>{m.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold">Day (1-31)</label>
-                <Input 
-                  type="number" min="1" max="31" required 
-                  value={formDay} onChange={(e) => setFormDay(e.target.value)}
-                  placeholder="e.g. 15" className="rounded-xl" 
-                />
-              </div>
-              <Button type="submit" className="w-full rounded-xl mt-6" disabled={createLeave.isPending}>
-                {createLeave.isPending ? "Saving..." : "Save Leave Record"}
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="flex gap-2 shrink-0">
+        <div className="flex gap-2 shrink-0 overflow-x-auto pb-2">
           {Array.from({ length: 103 }, (_, i) => 2080 + i).map(year => (
             <Button
               key={year}
               variant={selectedYear === year ? "default" : "outline"}
               className={cn(
-                "rounded-lg text-sm transition-all",
+                "rounded-lg text-sm transition-all shrink-0",
                 selectedYear === year 
                   ? "shadow-md shadow-primary/20" 
                   : "bg-card hover:bg-muted"
@@ -176,58 +115,63 @@ export default function LeaveReport() {
 
       <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4 font-medium">
-          <Info className="w-4 h-4" /> Double click any day to view or add multiple employee leaves.
+          <Info className="w-4 h-4" /> Click on any date to view or add employee leaves.
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
-          {Array.from({ length: 31 }).map((_, i) => {
-            const day = i + 1;
+        {/* Calendar Header */}
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(day => (
+            <div key={day} className="text-center text-xs font-bold text-muted-foreground p-2">
+              {day}
+            </div>
+          ))}
+        </div>
+
+        {/* Calendar Grid */}
+        <div className="grid grid-cols-7 gap-1">
+          {calendarDays.map((dayInfo, idx) => {
+            if (!dayInfo.isCurrentMonth) {
+              return (
+                <div
+                  key={idx}
+                  className="aspect-square p-2 rounded-lg bg-muted/30"
+                />
+              );
+            }
+
+            const day = dayInfo.day;
             const dayLeaves = leavesByDay.get(day) || [];
             
             return (
-              <div 
+              <button
                 key={day}
-                onDoubleClick={() => setMultiSelectDay(day)}
+                onClick={() => {
+                  if (dayLeaves.length > 0) {
+                    setDetailDay(day);
+                  } else {
+                    handleAddLeave(day);
+                  }
+                }}
                 className={cn(
-                  "border rounded-xl p-3 h-32 flex flex-col transition-all cursor-pointer",
+                  "aspect-square p-2 rounded-lg border transition-all text-sm font-semibold flex flex-col items-center justify-center relative",
                   dayLeaves.length > 0 
-                    ? "bg-primary/5 border-primary/20 hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5" 
-                    : "bg-background border-border/50 hover:bg-muted/50"
+                    ? "bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 cursor-pointer" 
+                    : "border-border/50 hover:bg-muted/50 cursor-pointer"
                 )}
               >
-                <div className="flex justify-between items-start">
-                  <span className={cn(
-                    "font-display font-bold text-lg",
-                    dayLeaves.length > 0 ? "text-primary" : "text-muted-foreground"
-                  )}>{day}</span>
-                  {dayLeaves.length > 0 && (
-                    <span className="text-[10px] font-bold bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
-                      {dayLeaves.length}
-                    </span>
-                  )}
-                </div>
-                
-                <div className="mt-2 flex-1 space-y-1 overflow-y-auto pr-1 custom-scrollbar">
-                  {dayLeaves.map(leave => {
-                    const emp = getEmployee(leave.employeeId);
-                    if (!emp) return null;
-                    return (
-                      <div 
-                        key={leave.id} 
-                        className="text-[11px] font-medium px-2 py-1 bg-background text-foreground border border-border/50 rounded-lg truncate shadow-sm flex items-center gap-1.5"
-                      >
-                        <User className="w-3 h-3 text-primary shrink-0" />
-                        {emp.name}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )
+                <span>{day}</span>
+                {dayLeaves.length > 0 && (
+                  <span className="text-[10px] font-bold bg-primary text-primary-foreground px-1 rounded-full mt-0.5">
+                    {dayLeaves.length}
+                  </span>
+                )}
+              </button>
+            );
           })}
         </div>
       </div>
 
+      {/* Detail Dialog */}
       <Dialog open={!!detailDay} onOpenChange={(val) => !val && setDetailDay(null)}>
         <DialogContent className="sm:max-w-[550px] rounded-2xl">
           <DialogHeader>
@@ -267,6 +211,7 @@ export default function LeaveReport() {
         </DialogContent>
       </Dialog>
 
+      {/* Multi-select Dialog */}
       <Dialog open={!!multiSelectDay} onOpenChange={(val) => !val && setMultiSelectDay(null)}>
         <DialogContent className="sm:max-w-[500px] rounded-2xl">
           <DialogHeader>
