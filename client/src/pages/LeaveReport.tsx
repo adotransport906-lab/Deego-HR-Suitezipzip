@@ -6,27 +6,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar as CalendarIcon, Plus, Info, User, X } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, Info, User, X, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function LeaveReport() {
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [detailDay, setDetailDay] = useState<number | null>(null);
+  const [multiSelectDay, setMultiSelectDay] = useState<number | null>(null);
+  const [selectedEmployees, setSelectedEmployees] = useState<Set<number>>(new Set());
 
   const { data: employees } = useEmployees();
   const { data: leaves } = useLeaves();
   const createLeave = useCreateLeave();
   const deleteLeave = useDeleteLeave();
 
-  // Form State
+  // Form State for single add
   const [formEmpId, setFormEmpId] = useState("");
   const [formMonth, setFormMonth] = useState(selectedMonth.toString());
   const [formDay, setFormDay] = useState("");
 
   const monthLeaves = leaves?.filter(l => l.nepaliMonth === selectedMonth) || [];
   
-  // Map days to leaves
   const leavesByDay = new Map<number, typeof leaves>();
   monthLeaves.forEach(l => {
     const existing = leavesByDay.get(l.day) || [];
@@ -48,6 +50,21 @@ export default function LeaveReport() {
         setFormDay("");
       }
     });
+  };
+
+  const handleAddMultipleLeaves = () => {
+    if (multiSelectDay === null) return;
+    
+    selectedEmployees.forEach(empId => {
+      createLeave.mutate({
+        employeeId: empId,
+        nepaliMonth: selectedMonth,
+        day: multiSelectDay
+      });
+    });
+    
+    setSelectedEmployees(new Set());
+    setMultiSelectDay(null);
   };
 
   const getEmployee = (id: number) => employees?.find(e => e.id === id);
@@ -136,7 +153,7 @@ export default function LeaveReport() {
 
       <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-sm">
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4 font-medium">
-          <Info className="w-4 h-4" /> Double click any day to view detailed leave logs.
+          <Info className="w-4 h-4" /> Double click any day to view or add multiple employee leaves.
         </div>
         
         <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-3">
@@ -147,7 +164,7 @@ export default function LeaveReport() {
             return (
               <div 
                 key={day}
-                onDoubleClick={() => dayLeaves.length > 0 && setDetailDay(day)}
+                onDoubleClick={() => setMultiSelectDay(day)}
                 className={cn(
                   "border rounded-xl p-3 h-32 flex flex-col transition-all cursor-pointer",
                   dayLeaves.length > 0 
@@ -223,6 +240,74 @@ export default function LeaveReport() {
                 </div>
               );
             })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!multiSelectDay} onOpenChange={(val) => !val && setMultiSelectDay(null)}>
+        <DialogContent className="sm:max-w-[500px] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-display">Add Leaves for Day {multiSelectDay}</DialogTitle>
+            <p className="text-sm text-muted-foreground mt-2">Select employees who are on leave this day</p>
+          </DialogHeader>
+          
+          <div className="mt-4 space-y-3 max-h-[60vh] overflow-y-auto">
+            {employees?.map(emp => {
+              const isSelected = selectedEmployees.has(emp.id);
+              const alreadyHasLeave = leavesByDay.get(multiSelectDay || 0)?.some(l => l.employeeId === emp.id);
+              
+              return (
+                <label 
+                  key={emp.id}
+                  className={cn(
+                    "flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all",
+                    isSelected 
+                      ? "bg-primary/10 border-primary/30 shadow-sm" 
+                      : alreadyHasLeave
+                      ? "bg-muted/30 border-border/50 opacity-60 cursor-not-allowed"
+                      : "bg-card border-border/50 hover:bg-muted/20"
+                  )}
+                >
+                  <Checkbox 
+                    checked={isSelected}
+                    disabled={alreadyHasLeave}
+                    onCheckedChange={(checked) => {
+                      const newSet = new Set(selectedEmployees);
+                      if (checked) {
+                        newSet.add(emp.id);
+                      } else {
+                        newSet.delete(emp.id);
+                      }
+                      setSelectedEmployees(newSet);
+                    }}
+                  />
+                  <div className="flex-1">
+                    <div className="font-semibold text-foreground flex items-center gap-2">
+                      {emp.name}
+                      {alreadyHasLeave && <CheckCircle2 className="w-4 h-4 text-primary" />}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{emp.designation} • {emp.department}</div>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+          
+          <div className="flex gap-2 mt-6">
+            <Button 
+              variant="outline" 
+              className="flex-1 rounded-xl"
+              onClick={() => setMultiSelectDay(null)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              className="flex-1 rounded-xl"
+              disabled={selectedEmployees.size === 0 || createLeave.isPending}
+              onClick={handleAddMultipleLeaves}
+            >
+              {createLeave.isPending ? "Saving..." : `Add ${selectedEmployees.size} Leave${selectedEmployees.size !== 1 ? 's' : ''}`}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

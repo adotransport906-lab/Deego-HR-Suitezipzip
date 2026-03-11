@@ -3,6 +3,8 @@ import { Users, Calendar, Utensils, Building2, Menu, BarChart3 } from "lucide-re
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CURRENT_YEAR } from "@/lib/yearContext";
 
 const NAV_ITEMS = [
   { name: "Overall", href: "/overall", icon: BarChart3 },
@@ -14,16 +16,34 @@ const NAV_ITEMS = [
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR.toString());
 
   const SidebarContent = () => (
     <>
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/25">
-          <Building2 className="text-primary-foreground w-6 h-6" />
+      <div className="p-6 flex items-center gap-3 flex-col items-start">
+        <div className="flex items-center gap-3 w-full">
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/25">
+            <Building2 className="text-primary-foreground w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="font-display font-bold text-lg leading-tight text-foreground">Deego Textiles</h1>
+            <p className="text-xs text-muted-foreground font-medium">HR Portal</p>
+          </div>
         </div>
-        <div>
-          <h1 className="font-display font-bold text-lg leading-tight text-foreground">Deego Textiles</h1>
-          <p className="text-xs text-muted-foreground font-medium">HR Portal</p>
+        <div className="w-full mt-3">
+          <label className="text-xs font-semibold text-muted-foreground block mb-1.5">Nepali Year</label>
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="rounded-lg text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[2080, 2081, 2082, 2083, 2084].map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year} B.S.
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">

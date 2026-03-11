@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useEmployees } from "@/hooks/use-employees";
 import { useMeals, useToggleMeal } from "@/hooks/use-meals";
-import { NEPALI_MONTHS } from "@/lib/constants";
+import { NEPALI_MONTHS, getDayOfWeek } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Check, X, UtensilsCrossed, Egg } from "lucide-react";
@@ -72,7 +72,7 @@ export default function MealExpenses() {
     <div className="space-y-8 flex flex-col h-[calc(100vh-6rem)]">
       <div className="shrink-0">
         <h1 className="text-3xl font-display font-bold text-foreground">Meal Expenses</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Track daily meal consumption for accurate expensing. Click cells to cycle: ❌ (No Meal) → ✅ (Meal) → ✅🥚 (Meal with Egg).</p>
+        <p className="text-muted-foreground mt-1 text-sm">Track daily meal consumption for accurate expensing. Meal = Rs. 120, Meal with Egg = Rs. 145</p>
       </div>
 
       <div className="flex flex-wrap gap-2 shrink-0">
@@ -111,11 +111,19 @@ export default function MealExpenses() {
                   <th className="sticky top-0 left-0 z-30 bg-muted/95 backdrop-blur px-4 py-3 text-left font-bold text-foreground border-b border-r min-w-[200px] shadow-[1px_1px_0_0_hsl(var(--border))]">
                     Employee Name
                   </th>
-                  {Array.from({ length: 31 }).map((_, i) => (
-                    <th key={i} className="sticky top-0 z-20 bg-muted/95 backdrop-blur py-3 px-1 border-b border-r text-center font-bold text-foreground min-w-[48px] shadow-[0_1px_0_0_hsl(var(--border))]">
-                      {i + 1}
-                    </th>
-                  ))}
+                  {Array.from({ length: 31 }).map((_, i) => {
+                    const day = i + 1;
+                    const dayOfWeek = getDayOfWeek(selectedMonth, day);
+                    const dayAbbr = dayOfWeek.substring(0, 3);
+                    return (
+                      <th key={i} className="sticky top-0 z-20 bg-muted/95 backdrop-blur py-2 px-1 border-b border-r text-center font-bold text-foreground min-w-[48px] shadow-[0_1px_0_0_hsl(var(--border))]">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="text-xs">{day}</span>
+                          <span className="text-[9px] text-muted-foreground">{dayAbbr}</span>
+                        </div>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody className="bg-card">

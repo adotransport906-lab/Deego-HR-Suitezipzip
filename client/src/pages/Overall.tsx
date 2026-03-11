@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { useEmployees } from "@/hooks/use-employees";
 import { useMeals } from "@/hooks/use-meals";
 import { useLeaves } from "@/hooks/use-leaves";
 import { NEPALI_MONTHS } from "@/lib/constants";
+import { Button } from "@/components/ui/button";
 import { BarChart3 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const MEAL_RATES = {
   meal: 120,
@@ -11,6 +14,7 @@ const MEAL_RATES = {
 };
 
 export default function Overall() {
+  const [selectedYear, setSelectedYear] = useState(2082);
   const { data: employees, isLoading: loadingEmps } = useEmployees();
   const { data: meals, isLoading: loadingMeals } = useMeals();
   const { data: leaves, isLoading: loadingLeaves } = useLeaves();
@@ -35,9 +39,28 @@ export default function Overall() {
 
   return (
     <div className="space-y-8 flex flex-col">
-      <div>
-        <h1 className="text-3xl font-display font-bold text-foreground">Overall Report</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Comprehensive view of all employee leaves and meal expenses.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-display font-bold text-foreground">Overall Report</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Year {selectedYear} B.S. - Comprehensive view of all employee leaves and meal expenses.</p>
+        </div>
+        <div className="flex gap-2">
+          {[2080, 2081, 2082, 2083, 2084].map((year) => (
+            <Button
+              key={year}
+              variant={selectedYear === year ? "default" : "outline"}
+              className={cn(
+                "rounded-xl transition-all",
+                selectedYear === year 
+                  ? "shadow-md shadow-primary/20" 
+                  : "bg-card hover:bg-muted"
+              )}
+              onClick={() => setSelectedYear(year)}
+            >
+              {year}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (
