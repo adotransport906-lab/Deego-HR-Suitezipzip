@@ -1,7 +1,6 @@
 import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
-import { z } from "zod";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   // ─── Employees ───────────────────────────────────────────────
@@ -137,6 +136,34 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   app.delete("/api/kitchen-expenses/:id", async (req, res) => {
     await storage.deleteKitchenExpense(Number(req.params.id));
+    res.status(204).send();
+  });
+
+  // ─── Office Expenses ──────────────────────────────────────────
+  app.get("/api/office-expenses", async (_req, res) => {
+    res.json(await storage.getOfficeExpenses());
+  });
+
+  app.post("/api/office-expenses", async (req, res) => {
+    try {
+      const data = await storage.createOfficeExpense(req.body);
+      res.status(201).json(data);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.patch("/api/office-expenses/:id", async (req, res) => {
+    try {
+      const data = await storage.updateOfficeExpense(Number(req.params.id), req.body);
+      res.json(data);
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+
+  app.delete("/api/office-expenses/:id", async (req, res) => {
+    await storage.deleteOfficeExpense(Number(req.params.id));
     res.status(204).send();
   });
 

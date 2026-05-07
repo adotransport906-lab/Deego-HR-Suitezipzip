@@ -14,13 +14,13 @@ import { cn } from "@/lib/utils";
 import type { Employee } from "@shared/schema";
 
 type FormData = {
-  employeeId: string; name: string; designation: string; department: string;
+  employeeId: string; name: string; designation: string;
   contactNumber: string; dateOfBirth: string; address: string;
   dateOfJoining: string; bankAccountNumber: string;
 };
 
 const emptyForm: FormData = {
-  employeeId: "", name: "", designation: "", department: "",
+  employeeId: "", name: "", designation: "",
   contactNumber: "", dateOfBirth: "", address: "", dateOfJoining: "", bankAccountNumber: ""
 };
 
@@ -65,7 +65,7 @@ export default function Employees() {
   const openEdit = (emp: Employee) => {
     setEditId(emp.id);
     setForm({
-      employeeId: emp.employeeId, name: emp.name, designation: emp.designation, department: emp.department,
+      employeeId: emp.employeeId, name: emp.name, designation: emp.designation,
       contactNumber: emp.contactNumber ?? "", dateOfBirth: emp.dateOfBirth ?? "",
       address: emp.address ?? "", dateOfJoining: emp.dateOfJoining ?? "",
       bankAccountNumber: emp.bankAccountNumber ?? ""
@@ -85,7 +85,7 @@ export default function Employees() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
-      employeeId: form.employeeId, name: form.name, designation: form.designation, department: form.department,
+      employeeId: form.employeeId, name: form.name, designation: form.designation, department: "",
       contactNumber: form.contactNumber || null, dateOfBirth: form.dateOfBirth || null,
       address: form.address || null, dateOfJoining: form.dateOfJoining || null,
       bankAccountNumber: form.bankAccountNumber || null
@@ -103,7 +103,7 @@ export default function Employees() {
       ? filteredEmployees.filter(e => selectedIds.has(e.id))
       : filteredEmployees;
     const rows = toExport.map(e => ({
-      "Employee ID": e.employeeId, "Name": e.name, "Designation": e.designation, "Department": e.department,
+      "Employee ID": e.employeeId, "Name": e.name, "Designation": e.designation,
       "Contact": e.contactNumber ?? "", "Date of Birth": e.dateOfBirth ?? "",
       "Date of Joining": e.dateOfJoining ?? "", "Address": e.address ?? "",
       "Bank Account": e.bankAccountNumber ?? ""
@@ -111,7 +111,7 @@ export default function Employees() {
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Employees");
-    XLSX.writeFile(wb, "Employees_Deego_Textiles.xlsx");
+    XLSX.writeFile(wb, "Employees_ADO_International.xlsx");
     toast({ title: "Exported", description: `${rows.length} employees exported to Excel.` });
   };
 
@@ -187,7 +187,7 @@ export default function Employees() {
       await new Promise<void>(resolve => {
         createEmployee.mutate({
           employeeId: row.employeeId || `IMP${Date.now()}${Math.random().toString(36).slice(2,5)}`,
-          name: row.name, designation: row.designation, department: row.department,
+          name: row.name, designation: row.designation, department: "",
           contactNumber: row.contactNumber || null, dateOfBirth: row.dateOfBirth || null,
           dateOfJoining: row.dateOfJoining || null, address: row.address || null,
           bankAccountNumber: row.bankAccountNumber || null
@@ -200,12 +200,12 @@ export default function Employees() {
     toast({ title: "Import complete", description: `${saved} employees added.` });
   };
 
-  const fld = (label: string, key: keyof FormData, type = "text", placeholder = "") => (
+  const fld = (label: string, key: keyof FormData, type = "text", placeholder = "", required = false) => (
     <div className="space-y-1.5">
-      <label className="text-sm font-semibold text-foreground">{label}</label>
+      <label className="text-sm font-semibold text-foreground">{label}{required && " *"}</label>
       <Input type={type} placeholder={placeholder} value={form[key]}
         onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} className="rounded-xl"
-        required={["employeeId","name","designation","department"].includes(key)} />
+        required={required} />
     </div>
   );
 
@@ -273,7 +273,6 @@ export default function Employees() {
                 <TableHead className="font-bold text-foreground whitespace-nowrap">Emp. ID</TableHead>
                 <TableHead className="font-bold text-foreground whitespace-nowrap">Full Name</TableHead>
                 <TableHead className="font-bold text-foreground whitespace-nowrap">Designation</TableHead>
-                <TableHead className="font-bold text-foreground whitespace-nowrap">Department</TableHead>
                 <TableHead className="font-bold text-foreground whitespace-nowrap">Contact</TableHead>
                 <TableHead className="font-bold text-foreground whitespace-nowrap">Date of Birth</TableHead>
                 <TableHead className="font-bold text-foreground whitespace-nowrap">Date of Joining</TableHead>
@@ -284,9 +283,9 @@ export default function Employees() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={selectMode ? 11 : 10} className="text-center py-12 text-muted-foreground">Loading...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={selectMode ? 10 : 9} className="text-center py-12 text-muted-foreground">Loading...</TableCell></TableRow>
               ) : filteredEmployees.length === 0 ? (
-                <TableRow><TableCell colSpan={selectMode ? 11 : 10} className="text-center py-12 text-muted-foreground">
+                <TableRow><TableCell colSpan={selectMode ? 10 : 9} className="text-center py-12 text-muted-foreground">
                   <Users className="w-10 h-10 mb-2 mx-auto text-muted" />
                   No employees found.
                 </TableCell></TableRow>
@@ -300,7 +299,6 @@ export default function Employees() {
                   <TableCell className="font-mono text-xs font-semibold text-primary whitespace-nowrap">{emp.employeeId}</TableCell>
                   <TableCell className="font-semibold whitespace-nowrap">{emp.name}</TableCell>
                   <TableCell className="text-sm whitespace-nowrap">{emp.designation}</TableCell>
-                  <TableCell className="text-sm whitespace-nowrap">{emp.department}</TableCell>
                   <TableCell className="text-sm whitespace-nowrap">{emp.contactNumber || <span className="text-muted-foreground">—</span>}</TableCell>
                   <TableCell className="text-sm whitespace-nowrap">{emp.dateOfBirth || <span className="text-muted-foreground">—</span>}</TableCell>
                   <TableCell className="text-sm whitespace-nowrap">{emp.dateOfJoining || <span className="text-muted-foreground">—</span>}</TableCell>
@@ -335,14 +333,13 @@ export default function Employees() {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             <div className="grid grid-cols-2 gap-4">
-              {fld("Employee ID *", "employeeId", "text", "DE001")}
-              {fld("Full Name *", "name", "text", "Ram Bahadur")}
-              {fld("Designation *", "designation", "text", "Manager")}
-              {fld("Department *", "department", "text", "Production")}
+              {fld("Employee ID", "employeeId", "text", "", true)}
+              {fld("Full Name", "name", "text", "", true)}
+              {fld("Designation", "designation", "text", "", true)}
               {fld("Contact Number", "contactNumber", "tel", "98XXXXXXXX")}
-              {fld("Date of Birth", "dateOfBirth", "text", "2048-01-15")}
-              {fld("Date of Joining", "dateOfJoining", "text", "2075-06-01")}
-              {fld("Bank Account No.", "bankAccountNumber", "text", "XXXXXXXXX")}
+              {fld("Date of Birth", "dateOfBirth", "text", "YYYY-MM-DD")}
+              {fld("Date of Joining", "dateOfJoining", "text", "YYYY-MM-DD")}
+              {fld("Bank Account No.", "bankAccountNumber", "text", "")}
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-semibold">Address</label>
@@ -363,7 +360,7 @@ export default function Employees() {
             <div className="mt-4 space-y-2">
               {([
                 ["Employee ID", viewEmp.employeeId], ["Full Name", viewEmp.name],
-                ["Designation", viewEmp.designation], ["Department", viewEmp.department],
+                ["Designation", viewEmp.designation],
                 ["Contact Number", viewEmp.contactNumber], ["Date of Birth", viewEmp.dateOfBirth],
                 ["Date of Joining", viewEmp.dateOfJoining], ["Address", viewEmp.address],
                 ["Bank Account No.", viewEmp.bankAccountNumber]

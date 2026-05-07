@@ -1,8 +1,8 @@
 import { db } from "./db";
 import {
-  employees, leaves, meals, attendance, overtime, kitchenExpenses,
+  employees, leaves, meals, attendance, overtime, kitchenExpenses, officeExpenses,
   type InsertEmployee, type InsertLeave, type InsertMeal,
-  type InsertAttendance, type InsertOvertime, type InsertKitchenExpense
+  type InsertAttendance, type InsertOvertime, type InsertKitchenExpense, type InsertOfficeExpense
 } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 
@@ -32,6 +32,11 @@ export interface IStorage {
   createKitchenExpense(expense: InsertKitchenExpense): Promise<any>;
   updateKitchenExpense(id: number, expense: Partial<InsertKitchenExpense>): Promise<any>;
   deleteKitchenExpense(id: number): Promise<void>;
+
+  getOfficeExpenses(): Promise<any[]>;
+  createOfficeExpense(expense: InsertOfficeExpense): Promise<any>;
+  updateOfficeExpense(id: number, expense: Partial<InsertOfficeExpense>): Promise<any>;
+  deleteOfficeExpense(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -140,6 +145,21 @@ export class DatabaseStorage implements IStorage {
   }
   async deleteKitchenExpense(id: number) {
     await db.delete(kitchenExpenses).where(eq(kitchenExpenses.id, id));
+  }
+
+  async getOfficeExpenses() {
+    return await db.select().from(officeExpenses);
+  }
+  async createOfficeExpense(expense: InsertOfficeExpense) {
+    const [res] = await db.insert(officeExpenses).values(expense).returning();
+    return res;
+  }
+  async updateOfficeExpense(id: number, expense: Partial<InsertOfficeExpense>) {
+    const [res] = await db.update(officeExpenses).set(expense).where(eq(officeExpenses.id, id)).returning();
+    return res;
+  }
+  async deleteOfficeExpense(id: number) {
+    await db.delete(officeExpenses).where(eq(officeExpenses.id, id));
   }
 }
 

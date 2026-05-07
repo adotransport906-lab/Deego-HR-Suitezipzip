@@ -1,17 +1,17 @@
 import { Link, useLocation } from "wouter";
-import { Users, Calendar, Utensils, Building2, Menu, BarChart3, ClipboardList, Clock, ChefHat, LayoutDashboard } from "lucide-react";
+import { Users, Calendar, Building2, Menu, BarChart3, ClipboardList, ChefHat, LayoutDashboard, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import logoImage from "@assets/image_1778143217552.png";
 
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Employees", href: "/employees", icon: Users },
   { name: "Attendance", href: "/attendance", icon: ClipboardList },
-  { name: "Overtime", href: "/overtime", icon: Clock },
   { name: "Leave Report", href: "/leaves", icon: Calendar },
-  { name: "Meal Expenses", href: "/meals", icon: Utensils },
   { name: "Kitchen Expenses", href: "/kitchen", icon: ChefHat },
+  { name: "Office Expenses", href: "/office", icon: Briefcase },
   { name: "Overall Report", href: "/overall", icon: BarChart3 },
 ];
 
@@ -22,12 +22,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       <div className="p-5 flex items-center gap-3 border-b border-border/50">
-        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/25">
-          <Building2 className="text-primary-foreground w-6 h-6" />
+        <div className="w-14 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-blue-700 shrink-0">
+          <img src={logoImage} alt="ADO Logo" className="w-full h-full object-contain" />
         </div>
         <div>
-          <h1 className="font-display font-bold text-base leading-tight text-foreground">Deego Textiles</h1>
-          <p className="text-xs text-muted-foreground font-medium">HR Portal</p>
+          <h1 className="font-display font-bold text-sm leading-tight text-foreground">ADO Logistics Portal</h1>
+          <p className="text-xs text-muted-foreground font-medium">ADO International Transport Nepal</p>
         </div>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
@@ -52,7 +52,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         })}
       </nav>
       <div className="p-4 text-xs text-center text-muted-foreground border-t border-border/50">
-        © {new Date().getFullYear()} Deego Textiles and Manufacturing Pvt. Ltd.
+        © {new Date().getFullYear()} ADO International Transport Nepal
       </div>
     </div>
   );
@@ -62,10 +62,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 border-b bg-card sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Building2 className="text-primary-foreground w-5 h-5" />
+          <div className="w-10 h-7 rounded-lg overflow-hidden bg-blue-700 flex items-center justify-center">
+            <img src={logoImage} alt="ADO Logo" className="w-full h-full object-contain" />
           </div>
-          <span className="font-display font-bold text-foreground">Deego Textiles</span>
+          <span className="font-display font-bold text-foreground text-sm">ADO Logistics Portal</span>
         </div>
         <Button variant="ghost" size="icon" onClick={() => setIsMobileOpen(!isMobileOpen)}>
           <Menu className="w-6 h-6" />

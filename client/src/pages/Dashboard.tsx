@@ -178,7 +178,7 @@ export default function Dashboard() {
               {today.day} {monthName} {today.year} B.S.
             </div>
             <div className="text-lg opacity-80 mt-1 font-medium">{today.dayOfWeek}</div>
-            <div className="mt-3 text-sm opacity-60">Deego Textiles and Manufacturing Pvt. Ltd. · HR Portal</div>
+            <div className="mt-3 text-sm opacity-60">ADO International Transport Nepal · ADO Logistics Portal</div>
           </>
         )}
       </div>

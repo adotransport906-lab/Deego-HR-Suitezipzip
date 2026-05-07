@@ -7,7 +7,7 @@ export const employees = pgTable("employees", {
   employeeId: text("employee_id").notNull().unique(),
   name: text("name").notNull(),
   designation: text("designation").notNull(),
-  department: text("department").notNull(),
+  department: text("department").notNull().default(""),
   contactNumber: text("contact_number"),
   dateOfBirth: text("date_of_birth"),
   address: text("address"),
@@ -67,12 +67,24 @@ export const kitchenExpenses = pgTable("kitchen_expenses", {
   remarks: text("remarks"),
 });
 
+export const officeExpenses = pgTable("office_expenses", {
+  id: serial("id").primaryKey(),
+  nepaliYear: integer("nepali_year").notNull(),
+  nepaliMonth: integer("nepali_month").notNull(),
+  day: integer("day").notNull(),
+  itemName: text("item_name").notNull(),
+  quantity: text("quantity"),
+  amount: integer("amount").notNull(),
+  remarks: text("remarks"),
+});
+
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true });
 export const insertLeaveSchema = createInsertSchema(leaves).omit({ id: true });
 export const insertMealSchema = createInsertSchema(meals).omit({ id: true });
 export const insertAttendanceSchema = createInsertSchema(attendance).omit({ id: true });
 export const insertOvertimeSchema = createInsertSchema(overtime).omit({ id: true });
 export const insertKitchenExpenseSchema = createInsertSchema(kitchenExpenses).omit({ id: true });
+export const insertOfficeExpenseSchema = createInsertSchema(officeExpenses).omit({ id: true });
 
 export type Employee = typeof employees.$inferSelect;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
@@ -91,3 +103,6 @@ export type InsertOvertime = z.infer<typeof insertOvertimeSchema>;
 
 export type KitchenExpense = typeof kitchenExpenses.$inferSelect;
 export type InsertKitchenExpense = z.infer<typeof insertKitchenExpenseSchema>;
+
+export type OfficeExpense = typeof officeExpenses.$inferSelect;
+export type InsertOfficeExpense = z.infer<typeof insertOfficeExpenseSchema>;
