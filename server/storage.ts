@@ -1,10 +1,67 @@
-import { db } from "./db";
-import {
-  employees, leaves, meals, attendance, overtime, kitchenExpenses, officeExpenses,
-  type InsertEmployee, type InsertLeave, type InsertMeal,
-  type InsertAttendance, type InsertOvertime, type InsertKitchenExpense, type InsertOfficeExpense
+import { supabaseAdmin } from "./supabase";
+import type {
+  InsertEmployee, InsertLeave, InsertMeal,
+  InsertAttendance, InsertOvertime, InsertKitchenExpense, InsertOfficeExpense
 } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+
+// ─── Case converters ──────────────────────────────────────────
+
+function toSnake(obj: Record<string, any>): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) continue;
+    const snakeKey = key.replace(/([A-Z])/g, letter => `_${letter.toLowerCase()}`);
+    result[snakeKey] = value;
+  }
+  return result;
+}
+
+function toCamel(obj: Record<string, any>): Record<string, any> {
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    result[camelKey] = value;
+  }
+  return result;
+}
+
+function mapRows(rows: any[]): any[] {
+  return rows.map(toCamel);
+}
+
+async function dbSelect(table: string) {
+  const { data, error } = await supabaseAdmin.from(table).select("*").order("id");
+  if (error) throw new Error(error.message);
+  return mapRows(data ?? []);
+}
+
+async function dbInsert(table: string, payload: Record<string, any>) {
+  const { data, error } = await supabaseAdmin
+    .from(table)
+    .insert(toSnake(payload))
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return toCamel(data);
+}
+
+async function dbUpdate(table: string, id: number, payload: Record<string, any>) {
+  const { data, error } = await supabaseAdmin
+    .from(table)
+    .update({ ...toSnake(payload), updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return toCamel(data);
+}
+
+async function dbDelete(table: string, id: number) {
+  const { error } = await supabaseAdmin.from(table).delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+// ─── Interface ────────────────────────────────────────────────
 
 export interface IStorage {
   getEmployees(): Promise<any[]>;
@@ -39,128 +96,118 @@ export interface IStorage {
   deleteOfficeExpense(id: number): Promise<void>;
 }
 
-export class DatabaseStorage implements IStorage {
+// ─── Supabase implementation ──────────────────────────────────
+
+export class SupabaseStorage implements IStorage {
+  // ── Employees ──────────────────────────────────────────────
   async getEmployees() {
-    return await db.select().from(employees);
+    return dbSelect("employees");
   }
   async createEmployee(employee: InsertEmployee) {
-    const [res] = await db.insert(employees).values(employee).returning();
-    return res;
+    return dbInsert("employees", employee);
   }
   async updateEmployee(id: number, employee: Partial<InsertEmployee>) {
-    const [res] = await db.update(employees).set(employee).where(eq(employees.id, id)).returning();
-    return res;
+    return dbUpdate("employees", id, employee);
   }
   async deleteEmployee(id: number) {
-    await db.delete(employees).where(eq(employees.id, id));
+    return dbDelete("employees", id);
   }
 
+  // ── Leaves ─────────────────────────────────────────────────
   async getLeaves() {
-    return await db.select().from(leaves);
+    return dbSelect("leaves");
   }
   async createLeave(leave: InsertLeave) {
-    const [res] = await db.insert(leaves).values(leave).returning();
-    return res;
+    return dbInsert("leaves", leave);
   }
   async deleteLeave(id: number) {
-    await db.delete(leaves).where(eq(leaves.id, id));
+    return dbDelete("leaves", id);
   }
 
+  // ── Meals (upsert by employee + date) ──────────────────────
   async getMeals() {
-    return await db.select().from(meals);
+    return dbSelect("meals");
   }
   async setMeal(meal: InsertMeal) {
-    const existing = await db.select().from(meals).where(
-      and(
-        eq(meals.employeeId, meal.employeeId),
-        eq(meals.nepaliYear, meal.nepaliYear),
-        eq(meals.nepaliMonth, meal.nepaliMonth),
-        eq(meals.day, meal.day)
-      )
-    );
-    if (existing.length > 0) {
-      const [res] = await db.update(meals)
-        .set({ mealStatus: meal.mealStatus })
-        .where(eq(meals.id, existing[0].id))
-        .returning();
-      return res;
-    } else {
-      const [res] = await db.insert(meals).values(meal).returning();
-      return res;
-    }
+    const payload = {
+      ...toSnake(meal),
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await supabaseAdmin
+      .from("meals")
+      .upsert(payload, {
+        onConflict: "employee_id,nepali_year,nepali_month,day",
+      })
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return toCamel(data);
   }
 
+  // ── Attendance (upsert by employee + date) ─────────────────
   async getAttendance() {
-    return await db.select().from(attendance);
+    return dbSelect("attendance");
   }
   async setAttendance(record: InsertAttendance) {
-    const existing = await db.select().from(attendance).where(
-      and(
-        eq(attendance.employeeId, record.employeeId),
-        eq(attendance.nepaliYear, record.nepaliYear),
-        eq(attendance.nepaliMonth, record.nepaliMonth),
-        eq(attendance.day, record.day)
-      )
-    );
-    if (existing.length > 0) {
-      const [res] = await db.update(attendance)
-        .set({ status: record.status, checkInTime: record.checkInTime, checkOutTime: record.checkOutTime, remarks: record.remarks })
-        .where(eq(attendance.id, existing[0].id))
-        .returning();
-      return res;
-    } else {
-      const [res] = await db.insert(attendance).values(record).returning();
-      return res;
-    }
+    const payload = {
+      ...toSnake(record),
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await supabaseAdmin
+      .from("attendance")
+      .upsert(payload, {
+        onConflict: "employee_id,nepali_year,nepali_month,day",
+      })
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return toCamel(data);
   }
   async deleteAttendance(id: number) {
-    await db.delete(attendance).where(eq(attendance.id, id));
+    return dbDelete("attendance", id);
   }
 
+  // ── Overtime ───────────────────────────────────────────────
   async getOvertime() {
-    return await db.select().from(overtime);
+    return dbSelect("overtime");
   }
   async createOvertime(record: InsertOvertime) {
-    const [res] = await db.insert(overtime).values(record).returning();
-    return res;
+    return dbInsert("overtime", record);
   }
   async updateOvertime(id: number, record: Partial<InsertOvertime>) {
-    const [res] = await db.update(overtime).set(record).where(eq(overtime.id, id)).returning();
-    return res;
+    return dbUpdate("overtime", id, record);
   }
   async deleteOvertime(id: number) {
-    await db.delete(overtime).where(eq(overtime.id, id));
+    return dbDelete("overtime", id);
   }
 
+  // ── Kitchen Expenses ───────────────────────────────────────
   async getKitchenExpenses() {
-    return await db.select().from(kitchenExpenses);
+    return dbSelect("kitchen_expenses");
   }
   async createKitchenExpense(expense: InsertKitchenExpense) {
-    const [res] = await db.insert(kitchenExpenses).values(expense).returning();
-    return res;
+    return dbInsert("kitchen_expenses", expense);
   }
   async updateKitchenExpense(id: number, expense: Partial<InsertKitchenExpense>) {
-    const [res] = await db.update(kitchenExpenses).set(expense).where(eq(kitchenExpenses.id, id)).returning();
-    return res;
+    return dbUpdate("kitchen_expenses", id, expense);
   }
   async deleteKitchenExpense(id: number) {
-    await db.delete(kitchenExpenses).where(eq(kitchenExpenses.id, id));
+    return dbDelete("kitchen_expenses", id);
   }
 
+  // ── Office Expenses ────────────────────────────────────────
   async getOfficeExpenses() {
-    return await db.select().from(officeExpenses);
+    return dbSelect("office_expenses");
   }
   async createOfficeExpense(expense: InsertOfficeExpense) {
-    const [res] = await db.insert(officeExpenses).values(expense).returning();
-    return res;
+    return dbInsert("office_expenses", expense);
   }
   async updateOfficeExpense(id: number, expense: Partial<InsertOfficeExpense>) {
-    const [res] = await db.update(officeExpenses).set(expense).where(eq(officeExpenses.id, id)).returning();
-    return res;
+    return dbUpdate("office_expenses", id, expense);
   }
   async deleteOfficeExpense(id: number) {
-    await db.delete(officeExpenses).where(eq(officeExpenses.id, id));
+    return dbDelete("office_expenses", id);
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new SupabaseStorage();

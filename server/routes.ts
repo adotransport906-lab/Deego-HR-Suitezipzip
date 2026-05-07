@@ -3,9 +3,22 @@ import type { Server } from "http";
 import { storage } from "./storage";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
+
+  // ─── Public config (Supabase anon key for frontend realtime) ──
+  app.get("/api/config", (_req, res) => {
+    res.json({
+      supabaseUrl: process.env.SUPABASE_URL ?? "",
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? "",
+    });
+  });
+
   // ─── Employees ───────────────────────────────────────────────
   app.get("/api/employees", async (_req, res) => {
-    res.json(await storage.getEmployees());
+    try {
+      res.json(await storage.getEmployees());
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
   });
 
   app.post("/api/employees", async (req, res) => {
@@ -27,13 +40,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   app.delete("/api/employees/:id", async (req, res) => {
-    await storage.deleteEmployee(Number(req.params.id));
-    res.status(204).send();
+    try {
+      await storage.deleteEmployee(Number(req.params.id));
+      res.status(204).send();
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
   });
 
   // ─── Leaves ──────────────────────────────────────────────────
   app.get("/api/leaves", async (_req, res) => {
-    res.json(await storage.getLeaves());
+    try {
+      res.json(await storage.getLeaves());
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
   });
 
   app.post("/api/leaves", async (req, res) => {
@@ -46,13 +67,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   app.delete("/api/leaves/:id", async (req, res) => {
-    await storage.deleteLeave(Number(req.params.id));
-    res.status(204).send();
+    try {
+      await storage.deleteLeave(Number(req.params.id));
+      res.status(204).send();
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
   });
 
   // ─── Meals ────────────────────────────────────────────────────
   app.get("/api/meals", async (_req, res) => {
-    res.json(await storage.getMeals());
+    try {
+      res.json(await storage.getMeals());
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
   });
 
   app.post("/api/meals", async (req, res) => {
@@ -66,7 +95,11 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // ─── Attendance ───────────────────────────────────────────────
   app.get("/api/attendance", async (_req, res) => {
-    res.json(await storage.getAttendance());
+    try {
+      res.json(await storage.getAttendance());
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
   });
 
   app.post("/api/attendance", async (req, res) => {
@@ -79,13 +112,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   app.delete("/api/attendance/:id", async (req, res) => {
-    await storage.deleteAttendance(Number(req.params.id));
-    res.status(204).send();
+    try {
+      await storage.deleteAttendance(Number(req.params.id));
+      res.status(204).send();
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
   });
 
   // ─── Overtime ─────────────────────────────────────────────────
   app.get("/api/overtime", async (_req, res) => {
-    res.json(await storage.getOvertime());
+    try {
+      res.json(await storage.getOvertime());
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
   });
 
   app.post("/api/overtime", async (req, res) => {
@@ -107,13 +148,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   app.delete("/api/overtime/:id", async (req, res) => {
-    await storage.deleteOvertime(Number(req.params.id));
-    res.status(204).send();
+    try {
+      await storage.deleteOvertime(Number(req.params.id));
+      res.status(204).send();
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
   });
 
   // ─── Kitchen Expenses ─────────────────────────────────────────
   app.get("/api/kitchen-expenses", async (_req, res) => {
-    res.json(await storage.getKitchenExpenses());
+    try {
+      res.json(await storage.getKitchenExpenses());
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
   });
 
   app.post("/api/kitchen-expenses", async (req, res) => {
@@ -135,13 +184,21 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   app.delete("/api/kitchen-expenses/:id", async (req, res) => {
-    await storage.deleteKitchenExpense(Number(req.params.id));
-    res.status(204).send();
+    try {
+      await storage.deleteKitchenExpense(Number(req.params.id));
+      res.status(204).send();
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
   });
 
   // ─── Office Expenses ──────────────────────────────────────────
   app.get("/api/office-expenses", async (_req, res) => {
-    res.json(await storage.getOfficeExpenses());
+    try {
+      res.json(await storage.getOfficeExpenses());
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
   });
 
   app.post("/api/office-expenses", async (req, res) => {
@@ -163,8 +220,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   app.delete("/api/office-expenses/:id", async (req, res) => {
-    await storage.deleteOfficeExpense(Number(req.params.id));
-    res.status(204).send();
+    try {
+      await storage.deleteOfficeExpense(Number(req.params.id));
+      res.status(204).send();
+    } catch (err: any) {
+      res.status(400).json({ message: err.message });
+    }
   });
 
   return httpServer;

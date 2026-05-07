@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/Layout";
 import NotFound from "@/pages/not-found";
 import { NepaliDateDisplay } from "@/components/NepaliDateDisplay";
+import { RealtimeProvider } from "@/components/RealtimeProvider";
 
 import Dashboard from "@/pages/Dashboard";
 import Employees from "@/pages/Employees";
@@ -40,8 +41,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router />
+        <RealtimeProvider>
+          <Toaster />
+          <Router />
+        </RealtimeProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
