@@ -3,6 +3,14 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { supabaseAdmin } from "./supabase";
 
+function normalizeSupabaseUrl(url: string): string {
+  const dashboardMatch = url.match(/supabase\.com\/dashboard\/project\/([a-z0-9]+)/i);
+  if (dashboardMatch) return `https://${dashboardMatch[1]}.supabase.co`;
+  const projectMatch = url.match(/^(https:\/\/[a-z0-9]+\.supabase\.co)/i);
+  if (projectMatch) return projectMatch[1];
+  return url;
+}
+
 // ─── Auth helpers ─────────────────────────────────────────────
 
 async function getAuthUser(req: Request) {
@@ -32,7 +40,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // ─── Public config (Supabase anon key for frontend) ───────
   app.get("/api/config", (_req, res) => {
     res.json({
-      supabaseUrl: process.env.SUPABASE_URL ?? "",
+      supabaseUrl: normalizeSupabaseUrl(process.env.SUPABASE_URL ?? ""),
       supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? "",
     });
   });
