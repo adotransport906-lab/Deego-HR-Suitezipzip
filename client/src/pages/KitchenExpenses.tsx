@@ -291,6 +291,7 @@ export default function KitchenExpenses() {
               const hasExpenses = dayTotal > 0;
               const expCount = monthExpenses.filter(e => e.day === dayInfo.day).length;
               const isSat = dayInfo.dayOfWeek === "Sat";
+              const isToday = selectedYear === today.year && selectedMonth === today.month && dayInfo.day === today.day;
 
               return (
                 <button
@@ -298,7 +299,9 @@ export default function KitchenExpenses() {
                   onClick={() => setCalendarDetailDay(dayInfo.day)}
                   className={cn(
                     "aspect-square rounded-xl flex flex-col items-center justify-center transition-all text-center p-1 border",
-                    hasExpenses
+                    isToday
+                      ? "bg-emerald-500 border-emerald-600 hover:bg-emerald-600 cursor-pointer shadow-md shadow-emerald-200"
+                      : hasExpenses
                       ? "bg-primary/10 border-primary/30 hover:bg-primary/20 hover:shadow-md hover:shadow-primary/10 cursor-pointer"
                       : isSat
                       ? "bg-red-50/50 border-red-100 hover:bg-red-50 cursor-pointer"
@@ -306,7 +309,7 @@ export default function KitchenExpenses() {
                   )}
                 >
                   <span className={cn("text-sm font-bold leading-none",
-                    isSat ? "text-red-500" : hasExpenses ? "text-primary" : "text-foreground")}>
+                    isToday ? "text-white" : isSat ? "text-red-500" : hasExpenses ? "text-primary" : "text-foreground")}>
                     {dayInfo.day}
                   </span>
                   {hasExpenses ? (
@@ -326,6 +329,10 @@ export default function KitchenExpenses() {
 
           {/* Legend */}
           <div className="flex items-center gap-4 pt-2 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-emerald-500 border border-emerald-600 inline-block" />
+              Today
+            </span>
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-sm bg-primary/20 border border-primary/30 inline-block" />
               Has expenses

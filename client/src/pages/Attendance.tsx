@@ -310,12 +310,15 @@ export default function Attendance() {
               <tr className="bg-muted/40 border-b border-border/30">
                 {selectMode && <th className="w-8 border-r border-border/20" />}
                 <th className="text-left px-3 py-2 font-bold text-foreground border-r border-border/20 min-w-[160px]">Employee</th>
-                {days.map(d => (
-                  <th key={d} className={cn("w-9 text-center py-1 border-r border-border/10 font-medium",
-                    isSaturday(d) ? "bg-red-50 text-red-500" : "text-muted-foreground")}>
-                    {getDayDow(d).slice(0,2)}
-                  </th>
-                ))}
+                {days.map(d => {
+                  const isToday = selectedYear === today.year && selectedMonth === today.month && d === today.day;
+                  return (
+                    <th key={d} className={cn("w-9 text-center py-1 border-r border-border/10 font-medium",
+                      isToday ? "bg-emerald-500 text-white" : isSaturday(d) ? "bg-red-50 text-red-500" : "text-muted-foreground")}>
+                      {getDayDow(d).slice(0,2)}
+                    </th>
+                  );
+                })}
                 <th className="text-center px-2 py-2 bg-emerald-50 text-emerald-700 font-bold border-r border-border/20 min-w-[56px]">Total P</th>
                 <th className="text-center px-2 py-2 bg-red-50 text-red-700 font-bold min-w-[56px]">Total A</th>
               </tr>
@@ -323,12 +326,15 @@ export default function Attendance() {
               <tr className="bg-muted/20 border-b border-border/30">
                 {selectMode && <th className="border-r border-border/20" />}
                 <th className="text-left px-3 py-1 text-xs text-muted-foreground border-r border-border/20 font-medium">Designation</th>
-                {days.map(d => (
-                  <th key={d} className={cn("text-center py-1 border-r border-border/10 font-bold",
-                    isSaturday(d) ? "bg-red-50/60 text-red-500" : "text-foreground")}>
-                    {d}
-                  </th>
-                ))}
+                {days.map(d => {
+                  const isToday = selectedYear === today.year && selectedMonth === today.month && d === today.day;
+                  return (
+                    <th key={d} className={cn("text-center py-1 border-r border-border/10 font-bold",
+                      isToday ? "bg-emerald-500 text-white" : isSaturday(d) ? "bg-red-50/60 text-red-500" : "text-foreground")}>
+                      {d}
+                    </th>
+                  );
+                })}
                 <th className="bg-emerald-50/60 border-r border-border/20" />
                 <th className="bg-red-50/60" />
               </tr>
@@ -354,9 +360,10 @@ export default function Attendance() {
                     {days.map(d => {
                       const rec = getRecord(emp.id, d);
                       const status = rec?.status as AttendanceStatus | undefined;
+                      const isToday = selectedYear === today.year && selectedMonth === today.month && d === today.day;
                       return (
                         <td key={d} className={cn("w-9 text-center py-1 border-r border-border/10",
-                          isSaturday(d) ? "bg-red-50/30" : "")}>
+                          isToday ? "bg-emerald-50/50" : isSaturday(d) ? "bg-red-50/30" : "")}>
                           <button
                             onClick={() => openCellDialog(emp, d)}
                             className={cn("w-7 h-6 rounded text-[10px] font-bold transition-all",
