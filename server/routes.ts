@@ -51,12 +51,38 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     catch (err: any) { res.status(500).json({ message: err.message }); }
   });
   app.post("/api/employees", async (req, res) => {
-    try { res.status(201).json(await storage.createEmployee(req.body)); }
-    catch (err: any) { res.status(400).json({ message: err.message }); }
+    try {
+      const body = { ...req.body };
+      if (body.salary === null || body.salary === undefined) delete body.salary;
+      if (body.customFields === null || body.customFields === undefined) delete body.customFields;
+      res.status(201).json(await storage.createEmployee(body));
+    } catch (err: any) {
+      // Retry without new columns if they don't exist in DB yet
+      if (err.message?.includes("custom_fields") || err.message?.includes("salary")) {
+        try {
+          const body = { ...req.body };
+          delete body.salary; delete body.customFields;
+          res.status(201).json(await storage.createEmployee(body));
+        } catch (e2: any) { res.status(400).json({ message: e2.message }); }
+      } else { res.status(400).json({ message: err.message }); }
+    }
   });
   app.patch("/api/employees/:id", async (req, res) => {
-    try { res.json(await storage.updateEmployee(Number(req.params.id), req.body)); }
-    catch (err: any) { res.status(400).json({ message: err.message }); }
+    try {
+      const body = { ...req.body };
+      if (body.salary === null || body.salary === undefined) delete body.salary;
+      if (body.customFields === null || body.customFields === undefined) delete body.customFields;
+      res.json(await storage.updateEmployee(Number(req.params.id), body));
+    } catch (err: any) {
+      // Retry without new columns if they don't exist in DB yet
+      if (err.message?.includes("custom_fields") || err.message?.includes("salary")) {
+        try {
+          const body = { ...req.body };
+          delete body.salary; delete body.customFields;
+          res.json(await storage.updateEmployee(Number(req.params.id), body));
+        } catch (e2: any) { res.status(400).json({ message: e2.message }); }
+      } else { res.status(400).json({ message: err.message }); }
+    }
   });
   app.delete("/api/employees/:id", async (req, res) => {
     try { await storage.deleteEmployee(Number(req.params.id)); res.status(204).send(); }

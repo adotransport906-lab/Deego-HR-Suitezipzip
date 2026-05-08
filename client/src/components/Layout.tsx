@@ -14,7 +14,7 @@ const NAV_ITEMS = [
   { name: "Employees",       href: "/employees",  icon: Users },
   { name: "Attendance",      href: "/attendance", icon: ClipboardList },
   { name: "Leave Report",    href: "/leaves",     icon: Calendar },
-  { name: "Kitchen Expenses",href: "/kitchen",    icon: ChefHat },
+  { name: "Meal / Kitchen Expenses", href: "/kitchen", icon: ChefHat },
   { name: "Office Expenses", href: "/office",     icon: Briefcase },
   { name: "Salary",          href: "/salary",     icon: Wallet },
   { name: "Overall Report",  href: "/overall",    icon: BarChart3 },

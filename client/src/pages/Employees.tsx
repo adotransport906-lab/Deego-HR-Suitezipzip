@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee } from "@/hooks/use-employees";
 import { Button } from "@/components/ui/button";
@@ -6,22 +6,35 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Users, Plus, Trash2, Search, Pencil, Eye, Upload, Download, MousePointer2, Check } from "lucide-react";
+import { Users, Plus, Trash2, Search, Pencil, Eye, Upload, Download, MousePointer2, Check, Settings2, X } from "lucide-react";
 import { useActiveDate } from "@/hooks/use-active-date";
 import { NEPALI_MONTHS } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@shared/schema";
 
+const CUSTOM_FIELDS_KEY = "ado_employee_custom_fields";
+
+type CustomFieldDef = { name: string; type: "text" | "number" | "date" };
+
+function loadCustomFields(): CustomFieldDef[] {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_FIELDS_KEY) ?? "[]"); } catch { return []; }
+}
+function saveCustomFields(defs: CustomFieldDef[]) {
+  localStorage.setItem(CUSTOM_FIELDS_KEY, JSON.stringify(defs));
+}
+
 type FormData = {
   employeeId: string; name: string; designation: string;
   contactNumber: string; dateOfBirth: string; address: string;
-  dateOfJoining: string; bankAccountNumber: string;
+  dateOfJoining: string; bankAccountNumber: string; salary: string;
+  customFields: Record<string, string>;
 };
 
 const emptyForm: FormData = {
   employeeId: "", name: "", designation: "",
-  contactNumber: "", dateOfBirth: "", address: "", dateOfJoining: "", bankAccountNumber: ""
+  contactNumber: "", dateOfBirth: "", address: "", dateOfJoining: "", bankAccountNumber: "", salary: "",
+  customFields: {}
 };
 
 interface ImportedRow {
@@ -43,16 +56,22 @@ export default function Employees() {
   const [formOpen, setFormOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [fieldsOpen, setFieldsOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [viewEmp, setViewEmp] = useState<Employee | null>(null);
   const [form, setForm] = useState<FormData>(emptyForm);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
-  // Import state
+  const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDef[]>(loadCustomFields);
+  const [newFieldName, setNewFieldName] = useState("");
+  const [newFieldType, setNewFieldType] = useState<"text" | "number" | "date">("text");
+
   const [importRows, setImportRows] = useState<ImportedRow[]>([]);
   const [importText, setImportText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { saveCustomFields(customFieldDefs); }, [customFieldDefs]);
 
   const filteredEmployees = employees?.filter(e =>
     e.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -61,17 +80,34 @@ export default function Employees() {
     (e.designation || "").toLowerCase().includes(search.toLowerCase())
   ) ?? [];
 
-  const openAdd = () => { setEditId(null); setForm(emptyForm); setFormOpen(true); };
+  function getCustomFieldValues(emp: Employee): Record<string, string> {
+    try { return JSON.parse(emp.customFields ?? "{}"); } catch { return {}; }
+  }
+
+  const openAdd = () => {
+    setEditId(null);
+    const cf: Record<string, string> = {};
+    customFieldDefs.forEach(f => { cf[f.name] = ""; });
+    setForm({ ...emptyForm, customFields: cf });
+    setFormOpen(true);
+  };
+
   const openEdit = (emp: Employee) => {
     setEditId(emp.id);
+    const cf = getCustomFieldValues(emp);
+    const cfWithDefaults: Record<string, string> = {};
+    customFieldDefs.forEach(f => { cfWithDefaults[f.name] = cf[f.name] ?? ""; });
     setForm({
       employeeId: emp.employeeId, name: emp.name, designation: emp.designation,
       contactNumber: emp.contactNumber ?? "", dateOfBirth: emp.dateOfBirth ?? "",
       address: emp.address ?? "", dateOfJoining: emp.dateOfJoining ?? "",
-      bankAccountNumber: emp.bankAccountNumber ?? ""
+      bankAccountNumber: emp.bankAccountNumber ?? "",
+      salary: emp.salary?.toString() ?? "",
+      customFields: cfWithDefaults
     });
     setFormOpen(true);
   };
+
   const openView = (emp: Employee) => { setViewEmp(emp); setViewOpen(true); };
 
   const toggleRow = (id: number) => {
@@ -88,7 +124,9 @@ export default function Employees() {
       employeeId: form.employeeId, name: form.name, designation: form.designation, department: "",
       contactNumber: form.contactNumber || null, dateOfBirth: form.dateOfBirth || null,
       address: form.address || null, dateOfJoining: form.dateOfJoining || null,
-      bankAccountNumber: form.bankAccountNumber || null
+      bankAccountNumber: form.bankAccountNumber || null,
+      salary: form.salary ? Number(form.salary) : null,
+      customFields: Object.keys(form.customFields).length > 0 ? JSON.stringify(form.customFields) : null
     };
     if (editId) {
       updateEmployee.mutate({ id: editId, data: payload }, { onSuccess: () => setFormOpen(false) });
@@ -97,17 +135,37 @@ export default function Employees() {
     }
   };
 
-  // Export to Excel
+  const addCustomField = () => {
+    if (!newFieldName.trim()) return;
+    if (customFieldDefs.find(f => f.name.toLowerCase() === newFieldName.trim().toLowerCase())) {
+      toast({ title: "Field already exists", variant: "destructive" }); return;
+    }
+    setCustomFieldDefs(prev => [...prev, { name: newFieldName.trim(), type: newFieldType }]);
+    setNewFieldName("");
+    setNewFieldType("text");
+    toast({ title: `Field "${newFieldName.trim()}" added` });
+  };
+
+  const removeCustomField = (name: string) => {
+    setCustomFieldDefs(prev => prev.filter(f => f.name !== name));
+    toast({ title: `Field "${name}" removed` });
+  };
+
   const exportExcel = () => {
     const toExport = (selectMode && selectedIds.size > 0)
       ? filteredEmployees.filter(e => selectedIds.has(e.id))
       : filteredEmployees;
-    const rows = toExport.map(e => ({
-      "Employee ID": e.employeeId, "Name": e.name, "Designation": e.designation,
-      "Contact": e.contactNumber ?? "", "Date of Birth": e.dateOfBirth ?? "",
-      "Date of Joining": e.dateOfJoining ?? "", "Address": e.address ?? "",
-      "Bank Account": e.bankAccountNumber ?? ""
-    }));
+    const rows = toExport.map(e => {
+      const cf = getCustomFieldValues(e);
+      const base: Record<string, any> = {
+        "Employee ID": e.employeeId, "Name": e.name, "Designation": e.designation,
+        "Contact": e.contactNumber ?? "", "Date of Birth": e.dateOfBirth ?? "",
+        "Date of Joining": e.dateOfJoining ?? "", "Address": e.address ?? "",
+        "Bank Account": e.bankAccountNumber ?? "", "Salary": e.salary ?? ""
+      };
+      customFieldDefs.forEach(f => { base[f.name] = cf[f.name] ?? ""; });
+      return base;
+    });
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Employees");
@@ -115,7 +173,6 @@ export default function Employees() {
     toast({ title: "Exported", description: `${rows.length} employees exported to Excel.` });
   };
 
-  // Parse imported Excel/CSV file
   const normalizeHeader = (h: string) => h.toLowerCase().replace(/\s|_/g, "");
   const mapRow = (headerMap: Record<string, number>, row: any[]): ImportedRow => {
     const get = (keys: string[]) => {
@@ -169,7 +226,6 @@ export default function Employees() {
       firstLine.forEach((h, i) => { headerMap[h] = i; });
       rows = lines.slice(1).filter(l => l.trim()).map(l => mapRow(headerMap, l.split(/\t|,/).map(c => c.trim())));
     } else {
-      // Assume columns: ID, Name, Designation, Department, Contact, DOB, Joining, Address, Bank
       rows = lines.filter(l => l.trim()).map(l => {
         const c = l.split(/\t|,/).map(s => s.trim());
         return { employeeId: c[0]||"", name: c[1]||"", designation: c[2]||"", department: c[3]||"",
@@ -190,7 +246,7 @@ export default function Employees() {
           name: row.name, designation: row.designation, department: "",
           contactNumber: row.contactNumber || null, dateOfBirth: row.dateOfBirth || null,
           dateOfJoining: row.dateOfJoining || null, address: row.address || null,
-          bankAccountNumber: row.bankAccountNumber || null
+          bankAccountNumber: row.bankAccountNumber || null, salary: null, customFields: null
         }, { onSuccess: () => { saved++; resolve(); }, onError: () => resolve() });
       });
     }
@@ -200,14 +256,17 @@ export default function Employees() {
     toast({ title: "Import complete", description: `${saved} employees added.` });
   };
 
-  const fld = (label: string, key: keyof FormData, type = "text", placeholder = "", required = false) => (
+  const fld = (label: string, key: keyof Omit<FormData, "customFields">, type = "text", placeholder = "", required = false) => (
     <div className="space-y-1.5">
       <label className="text-sm font-semibold text-foreground">{label}{required && " *"}</label>
-      <Input type={type} placeholder={placeholder} value={form[key]}
+      <Input type={type} placeholder={placeholder} value={form[key] as string}
         onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} className="rounded-xl"
         required={required} />
     </div>
   );
+
+  const colSpanBase = selectMode ? 11 : 10;
+  const totalCols = colSpanBase + customFieldDefs.length;
 
   return (
     <div className="space-y-6">
@@ -230,7 +289,11 @@ export default function Employees() {
           <Button variant="outline" size="sm" className="rounded-xl" onClick={exportExcel}>
             <Download className="w-4 h-4 mr-1.5" /> Export {selectMode && selectedIds.size > 0 ? `(${selectedIds.size})` : ""}
           </Button>
-          <Button onClick={openAdd} size="sm" className="rounded-xl shadow-lg shadow-primary/20">
+          <Button variant="outline" size="sm" className="rounded-xl border-violet-300 text-violet-700 hover:bg-violet-50"
+            onClick={() => setFieldsOpen(true)} data-testid="button-employee-fields">
+            <Settings2 className="w-4 h-4 mr-1.5" /> Employee Fields
+          </Button>
+          <Button onClick={openAdd} size="sm" className="rounded-xl shadow-lg shadow-primary/20" data-testid="button-add-employee">
             <Plus className="w-4 h-4 mr-1.5" /> Add Employee
           </Button>
         </div>
@@ -278,48 +341,61 @@ export default function Employees() {
                 <TableHead className="font-bold text-foreground whitespace-nowrap">Date of Joining</TableHead>
                 <TableHead className="font-bold text-foreground whitespace-nowrap">Address</TableHead>
                 <TableHead className="font-bold text-foreground whitespace-nowrap">Bank Account</TableHead>
+                <TableHead className="font-bold text-foreground whitespace-nowrap">Salary (Rs.)</TableHead>
+                {customFieldDefs.map(f => (
+                  <TableHead key={f.name} className="font-bold text-foreground whitespace-nowrap">{f.name}</TableHead>
+                ))}
                 <TableHead className="font-bold text-foreground text-right whitespace-nowrap">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={selectMode ? 10 : 9} className="text-center py-12 text-muted-foreground">Loading...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={totalCols} className="text-center py-12 text-muted-foreground">Loading...</TableCell></TableRow>
               ) : filteredEmployees.length === 0 ? (
-                <TableRow><TableCell colSpan={selectMode ? 10 : 9} className="text-center py-12 text-muted-foreground">
+                <TableRow><TableCell colSpan={totalCols} className="text-center py-12 text-muted-foreground">
                   <Users className="w-10 h-10 mb-2 mx-auto text-muted" />
                   No employees found.
                 </TableCell></TableRow>
-              ) : filteredEmployees.map(emp => (
-                <TableRow key={emp.id} className={cn("hover:bg-muted/20", selectedIds.has(emp.id) && "bg-primary/5")}>
-                  {selectMode && (
-                    <TableCell className="w-10">
-                      <Checkbox checked={selectedIds.has(emp.id)} onCheckedChange={() => toggleRow(emp.id)} />
+              ) : filteredEmployees.map(emp => {
+                const cf = getCustomFieldValues(emp);
+                return (
+                  <TableRow key={emp.id} className={cn("hover:bg-muted/20", selectedIds.has(emp.id) && "bg-primary/5")}>
+                    {selectMode && (
+                      <TableCell className="w-10">
+                        <Checkbox checked={selectedIds.has(emp.id)} onCheckedChange={() => toggleRow(emp.id)} />
+                      </TableCell>
+                    )}
+                    <TableCell className="font-mono text-xs font-semibold text-primary whitespace-nowrap">{emp.employeeId}</TableCell>
+                    <TableCell className="font-semibold whitespace-nowrap">{emp.name}</TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">{emp.designation}</TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">{emp.contactNumber || <span className="text-muted-foreground">—</span>}</TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">{emp.dateOfBirth || <span className="text-muted-foreground">—</span>}</TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">{emp.dateOfJoining || <span className="text-muted-foreground">—</span>}</TableCell>
+                    <TableCell className="text-sm max-w-[150px] truncate" title={emp.address ?? ""}>{emp.address || <span className="text-muted-foreground">—</span>}</TableCell>
+                    <TableCell className="text-sm font-mono whitespace-nowrap">{emp.bankAccountNumber || <span className="text-muted-foreground">—</span>}</TableCell>
+                    <TableCell className="text-sm font-semibold whitespace-nowrap">
+                      {emp.salary ? <span className="text-emerald-700">Rs. {emp.salary.toLocaleString()}</span> : <span className="text-muted-foreground">—</span>}
                     </TableCell>
-                  )}
-                  <TableCell className="font-mono text-xs font-semibold text-primary whitespace-nowrap">{emp.employeeId}</TableCell>
-                  <TableCell className="font-semibold whitespace-nowrap">{emp.name}</TableCell>
-                  <TableCell className="text-sm whitespace-nowrap">{emp.designation}</TableCell>
-                  <TableCell className="text-sm whitespace-nowrap">{emp.contactNumber || <span className="text-muted-foreground">—</span>}</TableCell>
-                  <TableCell className="text-sm whitespace-nowrap">{emp.dateOfBirth || <span className="text-muted-foreground">—</span>}</TableCell>
-                  <TableCell className="text-sm whitespace-nowrap">{emp.dateOfJoining || <span className="text-muted-foreground">—</span>}</TableCell>
-                  <TableCell className="text-sm max-w-[150px] truncate" title={emp.address ?? ""}>{emp.address || <span className="text-muted-foreground">—</span>}</TableCell>
-                  <TableCell className="text-sm font-mono whitespace-nowrap">{emp.bankAccountNumber || <span className="text-muted-foreground">—</span>}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground" onClick={() => openView(emp)}>
-                        <Eye className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="w-7 h-7 text-blue-500 hover:bg-blue-50" onClick={() => openEdit(emp)}>
-                        <Pencil className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="w-7 h-7 text-destructive hover:bg-destructive/10"
-                        onClick={() => { if (confirm(`Remove ${emp.name}?`)) deleteEmployee.mutate(emp.id); }}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    {customFieldDefs.map(f => (
+                      <TableCell key={f.name} className="text-sm whitespace-nowrap">{cf[f.name] || <span className="text-muted-foreground">—</span>}</TableCell>
+                    ))}
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-foreground" onClick={() => openView(emp)}>
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="w-7 h-7 text-blue-500 hover:bg-blue-50" onClick={() => openEdit(emp)}>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="w-7 h-7 text-destructive hover:bg-destructive/10"
+                          onClick={() => { if (confirm(`Remove ${emp.name}?`)) deleteEmployee.mutate(emp.id); }}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
@@ -327,7 +403,7 @@ export default function Employees() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="sm:max-w-[600px] rounded-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[620px] rounded-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-display">{editId ? "Edit Employee" : "New Employee"}</DialogTitle>
           </DialogHeader>
@@ -340,11 +416,34 @@ export default function Employees() {
               {fld("Date of Birth", "dateOfBirth", "text", "YYYY-MM-DD")}
               {fld("Date of Joining", "dateOfJoining", "text", "YYYY-MM-DD")}
               {fld("Bank Account No.", "bankAccountNumber", "text", "")}
+              {fld("Salary (Rs.)", "salary", "number", "e.g. 25000")}
             </div>
             <div className="space-y-1.5">
               <label className="text-sm font-semibold">Address</label>
               <Input placeholder="Kathmandu, Bagmati Province" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} className="rounded-xl" />
             </div>
+            {customFieldDefs.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 pt-1">
+                  <div className="h-px flex-1 bg-border/50" />
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Custom Fields</span>
+                  <div className="h-px flex-1 bg-border/50" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {customFieldDefs.map(f => (
+                    <div key={f.name} className="space-y-1.5">
+                      <label className="text-sm font-semibold text-foreground">{f.name}</label>
+                      <Input
+                        type={f.type === "date" ? "date" : f.type === "number" ? "number" : "text"}
+                        value={form.customFields[f.name] ?? ""}
+                        onChange={e => setForm(prev => ({ ...prev, customFields: { ...prev.customFields, [f.name]: e.target.value } }))}
+                        className="rounded-xl"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <Button type="submit" className="w-full rounded-xl" disabled={createEmployee.isPending || updateEmployee.isPending}>
               {createEmployee.isPending || updateEmployee.isPending ? "Saving..." : editId ? "Save Changes" : "Create Employee"}
             </Button>
@@ -363,15 +462,88 @@ export default function Employees() {
                 ["Designation", viewEmp.designation],
                 ["Contact Number", viewEmp.contactNumber], ["Date of Birth", viewEmp.dateOfBirth],
                 ["Date of Joining", viewEmp.dateOfJoining], ["Address", viewEmp.address],
-                ["Bank Account No.", viewEmp.bankAccountNumber]
+                ["Bank Account No.", viewEmp.bankAccountNumber],
+                ["Salary (Rs.)", viewEmp.salary?.toLocaleString() ?? null],
               ] as [string, string | null][]).map(([label, val]) => (
                 <div key={label} className="flex justify-between items-start py-2 border-b border-border/30">
                   <span className="text-sm text-muted-foreground font-medium">{label}</span>
                   <span className="text-sm font-semibold text-foreground text-right max-w-[250px]">{val || "—"}</span>
                 </div>
               ))}
+              {customFieldDefs.length > 0 && (() => {
+                const cf = getCustomFieldValues(viewEmp);
+                return customFieldDefs.map(f => (
+                  <div key={f.name} className="flex justify-between items-start py-2 border-b border-border/30">
+                    <span className="text-sm text-muted-foreground font-medium">{f.name}</span>
+                    <span className="text-sm font-semibold text-foreground text-right max-w-[250px]">{cf[f.name] || "—"}</span>
+                  </div>
+                ));
+              })()}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Employee Fields Dialog */}
+      <Dialog open={fieldsOpen} onOpenChange={setFieldsOpen}>
+        <DialogContent className="sm:max-w-[480px] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-display flex items-center gap-2">
+              <Settings2 className="w-5 h-5 text-violet-600" /> Employee Fields
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">Add custom fields that appear in the employee table and form.</p>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            {/* Add new field */}
+            <div className="bg-muted/30 rounded-xl p-4 space-y-3">
+              <p className="text-sm font-semibold">Add New Field</p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Field name (e.g. Emergency Contact)"
+                  value={newFieldName}
+                  onChange={e => setNewFieldName(e.target.value)}
+                  className="rounded-xl flex-1"
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addCustomField(); }}}
+                />
+                <select
+                  value={newFieldType}
+                  onChange={e => setNewFieldType(e.target.value as any)}
+                  className="rounded-xl border border-border bg-background px-3 text-sm"
+                >
+                  <option value="text">Text</option>
+                  <option value="number">Number</option>
+                  <option value="date">Date</option>
+                </select>
+              </div>
+              <Button onClick={addCustomField} className="w-full rounded-xl" disabled={!newFieldName.trim()}>
+                <Plus className="w-4 h-4 mr-1.5" /> Add Field
+              </Button>
+            </div>
+
+            {/* Existing fields */}
+            {customFieldDefs.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Settings2 className="w-10 h-10 mx-auto text-muted mb-2" />
+                <p className="text-sm">No custom fields yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-muted-foreground">Current Fields ({customFieldDefs.length})</p>
+                {customFieldDefs.map(f => (
+                  <div key={f.name} className="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-card">
+                    <div>
+                      <span className="text-sm font-semibold">{f.name}</span>
+                      <span className="ml-2 text-xs text-muted-foreground capitalize px-1.5 py-0.5 bg-muted rounded">{f.type}</span>
+                    </div>
+                    <Button variant="ghost" size="icon" className="w-7 h-7 text-destructive hover:bg-destructive/10"
+                      onClick={() => removeCustomField(f.name)}>
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -382,9 +554,7 @@ export default function Employees() {
             <DialogTitle className="text-2xl font-display">Import Employees</DialogTitle>
             <p className="text-sm text-muted-foreground">Import employees from Excel, CSV, or pasted text.</p>
           </DialogHeader>
-
           <div className="space-y-5 mt-3">
-            {/* File Upload */}
             <div className="space-y-2">
               <label className="text-sm font-semibold flex items-center gap-1.5"><Upload className="w-4 h-4 text-primary" /> Upload Excel / CSV File</label>
               <div className="border-2 border-dashed border-border rounded-xl p-5 text-center bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors"
@@ -395,8 +565,6 @@ export default function Employees() {
                 <p className="text-xs text-muted-foreground mt-1">Columns auto-detected: Employee ID, Name, Designation, Department, Phone, etc.</p>
               </div>
             </div>
-
-            {/* Paste Text */}
             <div className="space-y-2">
               <label className="text-sm font-semibold">Paste Excel Data</label>
               <textarea
@@ -408,8 +576,6 @@ export default function Employees() {
               <Button variant="outline" className="rounded-xl w-full" onClick={parseImportText}>Parse Pasted Text</Button>
               <p className="text-xs text-muted-foreground">Copy rows from Excel, paste here, then click Parse. Include a header row or use: ID, Name, Designation, Department order.</p>
             </div>
-
-            {/* Preview */}
             {importRows.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">

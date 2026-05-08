@@ -69,7 +69,11 @@ export default function Salary() {
 
   function openPayDialog(emp: Employee) {
     const existing = getSalaryRecord(emp.id);
-    setFormTotal(existing?.totalSalary?.toString() ?? "");
+    // Pre-fill Total Salary from employee's salary field if no record exists yet
+    const defaultTotal = existing?.totalSalary !== undefined
+      ? existing.totalSalary.toString()
+      : (emp.salary ? emp.salary.toString() : "");
+    setFormTotal(defaultTotal);
     setFormProvided(existing?.providedSalary?.toString() ?? "");
     setFormPaymentType(existing?.paymentType ?? "cash");
     setFormPaymentDate(existing?.paymentDate ?? "");

@@ -122,7 +122,7 @@ export default function KitchenExpenses() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Kitchen Expenses</h1>
+          <h1 className="text-3xl font-display font-bold text-foreground">Meal / Kitchen Expenses</h1>
           <p className="text-muted-foreground mt-1 text-sm">
             {today.dayOfWeek}, {today.day} {NEPALI_MONTHS.find(m => m.value === today.month)?.label} {today.year} B.S.
           </p>
@@ -209,7 +209,7 @@ export default function KitchenExpenses() {
                 <TableHead className="font-semibold">Item Name</TableHead>
                 <TableHead className="font-semibold">Quantity</TableHead>
                 <TableHead className="font-semibold">Amount (Rs.)</TableHead>
-                <TableHead className="font-semibold">Remarks</TableHead>
+                <TableHead className="font-semibold">Description</TableHead>
                 <TableHead className="text-right font-semibold">Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -442,7 +442,7 @@ export default function KitchenExpenses() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold">Remarks</label>
+              <label className="text-sm font-semibold">Description</label>
               <Input placeholder="Optional..." value={formRemarks} onChange={e => setFormRemarks(e.target.value)} className="rounded-xl" />
             </div>
             <Button type="submit" className="w-full rounded-xl" disabled={!formItemName || !formAmount || createExpense.isPending}>

@@ -13,6 +13,8 @@ export const employees = pgTable("employees", {
   address: text("address"),
   dateOfJoining: text("date_of_joining"),
   bankAccountNumber: text("bank_account_number"),
+  salary: integer("salary"),
+  customFields: text("custom_fields"),
 });
 
 export const leaves = pgTable("leaves", {

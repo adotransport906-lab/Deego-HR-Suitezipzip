@@ -60,3 +60,7 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- INSERT INTO profiles (id, email, full_name, role)
 -- VALUES ('YOUR-USER-UUID-HERE', 'admin@example.com', 'Admin', 'admin')
 -- ON CONFLICT (id) DO UPDATE SET role = 'admin';
+
+-- Add salary and custom_fields columns to employees (if not exists)
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS salary integer;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS custom_fields text;

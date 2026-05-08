@@ -210,7 +210,7 @@ export default function OfficeExpenses() {
                 <TableHead className="font-semibold">Item Name</TableHead>
                 <TableHead className="font-semibold">Quantity</TableHead>
                 <TableHead className="font-semibold">Amount (Rs.)</TableHead>
-                <TableHead className="font-semibold">Remarks</TableHead>
+                <TableHead className="font-semibold">Description</TableHead>
                 <TableHead className="text-right font-semibold">Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -443,7 +443,7 @@ export default function OfficeExpenses() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold">Remarks</label>
+              <label className="text-sm font-semibold">Description</label>
               <Input placeholder="Optional..." value={formRemarks} onChange={e => setFormRemarks(e.target.value)} className="rounded-xl" />
             </div>
             <Button type="submit" className="w-full rounded-xl" disabled={!formItemName || !formAmount || createExpense.isPending}>

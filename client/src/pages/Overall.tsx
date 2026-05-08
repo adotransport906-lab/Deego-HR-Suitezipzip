@@ -2,11 +2,12 @@ import { useState, useMemo } from "react";
 import { useEmployees } from "@/hooks/use-employees";
 import { useLeaves } from "@/hooks/use-leaves";
 import { useAttendance } from "@/hooks/use-attendance";
+import { useSalaries } from "@/hooks/use-salary";
 import { NEPALI_MONTHS } from "@/lib/constants";
 import { useActiveDate } from "@/hooks/use-active-date";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { BarChart3, User, ChevronRight, Calendar, ClipboardList } from "lucide-react";
+import { BarChart3, User, ChevronRight, Calendar, ClipboardList, Wallet } from "lucide-react";
 
 export default function Overall() {
   const today = useActiveDate();
@@ -16,6 +17,7 @@ export default function Overall() {
   const { data: employees } = useEmployees();
   const { data: leaves } = useLeaves();
   const { data: attendance } = useAttendance();
+  const { data: salaries } = useSalaries();
 
   const selectedEmp = employees?.find(e => e.id === selectedEmpId) ?? null;
 
@@ -30,7 +32,26 @@ export default function Overall() {
     };
   };
 
+  const getSalaryRecord = (empId: number, month: number) =>
+    (salaries ?? []).find(s => s.employeeId === empId && s.nepaliYear === selectedYear && s.nepaliMonth === month);
+
   const monthName = NEPALI_MONTHS.find(m => m.value === today.month)?.label ?? "";
+
+  const yearSalaryTotal = useMemo(() => {
+    if (!selectedEmp) return 0;
+    return NEPALI_MONTHS.reduce((s, m) => {
+      const rec = getSalaryRecord(selectedEmp.id, m.value);
+      return s + (rec?.totalSalary ?? 0);
+    }, 0);
+  }, [selectedEmp, salaries, selectedYear]);
+
+  const yearSalaryPaid = useMemo(() => {
+    if (!selectedEmp) return 0;
+    return NEPALI_MONTHS.reduce((s, m) => {
+      const rec = getSalaryRecord(selectedEmp.id, m.value);
+      return s + (rec?.providedSalary ?? 0);
+    }, 0);
+  }, [selectedEmp, salaries, selectedYear]);
 
   return (
     <div className="space-y-6">
@@ -119,7 +140,7 @@ export default function Overall() {
               </div>
 
               {/* Year Totals */}
-              <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 <div className="border rounded-2xl p-4 bg-amber-50 text-amber-700 border-amber-200">
                   <Calendar className="w-5 h-5 mb-2" />
                   <p className="text-xs font-medium opacity-80">Total Leaves</p>
@@ -133,6 +154,14 @@ export default function Overall() {
                   <p className="text-xl font-bold mt-0.5">
                     {NEPALI_MONTHS.reduce((s, m) => s + getEmpAttendancePerMonth(selectedEmp.id, m.value).present, 0)}
                   </p>
+                </div>
+                <div className="border rounded-2xl p-4 bg-emerald-50 text-emerald-700 border-emerald-200 col-span-2 sm:col-span-1">
+                  <Wallet className="w-5 h-5 mb-2" />
+                  <p className="text-xs font-medium opacity-80">Salary Paid (Year)</p>
+                  <p className="text-xl font-bold mt-0.5">Rs. {yearSalaryPaid.toLocaleString()}</p>
+                  {yearSalaryTotal > 0 && yearSalaryTotal !== yearSalaryPaid && (
+                    <p className="text-xs mt-0.5 opacity-70">of Rs. {yearSalaryTotal.toLocaleString()}</p>
+                  )}
                 </div>
               </div>
 
@@ -153,13 +182,21 @@ export default function Overall() {
                             <Calendar className="w-3 h-3" /> Leaves
                           </span>
                         </th>
+                        <th className="px-4 py-3 text-center font-bold">
+                          <span className="flex items-center justify-center gap-1">
+                            <Wallet className="w-3 h-3" /> Salary
+                          </span>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {NEPALI_MONTHS.map(month => {
                         const att = getEmpAttendancePerMonth(selectedEmp.id, month.value);
                         const leaveCount = getEmpLeavesPerMonth(selectedEmp.id, month.value);
-                        const hasData = att.present + att.half_day + leaveCount > 0;
+                        const salRec = getSalaryRecord(selectedEmp.id, month.value);
+                        const hasData = att.present + att.half_day + leaveCount > 0 || !!salRec;
+                        const isPaid = salRec && salRec.providedSalary >= salRec.totalSalary && salRec.totalSalary > 0;
+                        const isPartial = salRec && salRec.providedSalary > 0 && salRec.providedSalary < salRec.totalSalary;
                         return (
                           <tr key={month.value} className={cn("border-b border-border/40 transition-colors", hasData ? "hover:bg-muted/10" : "opacity-50")}>
                             <td className="px-4 py-3 font-medium">{month.label}</td>
@@ -177,6 +214,25 @@ export default function Overall() {
                                 <span className="inline-block px-2.5 py-0.5 rounded-lg bg-amber-500/15 text-amber-700 font-bold text-xs">{leaveCount}</span>
                               ) : <span className="text-muted-foreground">—</span>}
                             </td>
+                            <td className="px-4 py-3 text-center">
+                              {!salRec || salRec.totalSalary === 0 ? (
+                                <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-600 border border-red-200">Unpaid</span>
+                              ) : isPaid ? (
+                                <div className="text-xs space-y-0.5">
+                                  <div className="text-muted-foreground">Total: <span className="font-semibold text-foreground">Rs.{salRec.totalSalary.toLocaleString()}</span></div>
+                                  <div className="text-muted-foreground">Paid: <span className="font-semibold text-emerald-700">Rs.{salRec.providedSalary.toLocaleString()}</span></div>
+                                  <div className="text-muted-foreground">Rem: <span className="font-semibold text-emerald-600">Rs.0</span></div>
+                                </div>
+                              ) : isPartial ? (
+                                <div className="text-xs space-y-0.5">
+                                  <div className="text-muted-foreground">Total: <span className="font-semibold text-foreground">Rs.{salRec.totalSalary.toLocaleString()}</span></div>
+                                  <div className="text-muted-foreground">Paid: <span className="font-semibold text-amber-700">Rs.{salRec.providedSalary.toLocaleString()}</span></div>
+                                  <div className="text-muted-foreground">Rem: <span className="font-semibold text-red-600">Rs.{(salRec.totalSalary - salRec.providedSalary).toLocaleString()}</span></div>
+                                </div>
+                              ) : (
+                                <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-600 border border-red-200">Unpaid</span>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}
@@ -191,6 +247,17 @@ export default function Overall() {
                         </td>
                         <td className="px-4 py-3 text-center font-bold">
                           {NEPALI_MONTHS.reduce((s, m) => s + getEmpLeavesPerMonth(selectedEmp.id, m.value), 0)}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {yearSalaryTotal > 0 ? (
+                            <div className="text-xs space-y-0.5">
+                              <div className="font-bold text-foreground">Rs.{yearSalaryTotal.toLocaleString()}</div>
+                              <div className="text-emerald-700 font-semibold">Paid: Rs.{yearSalaryPaid.toLocaleString()}</div>
+                              {yearSalaryTotal - yearSalaryPaid > 0 && (
+                                <div className="text-red-600 font-semibold">Rem: Rs.{(yearSalaryTotal - yearSalaryPaid).toLocaleString()}</div>
+                              )}
+                            </div>
+                          ) : <span className="text-muted-foreground text-xs">—</span>}
                         </td>
                       </tr>
                     </tfoot>
