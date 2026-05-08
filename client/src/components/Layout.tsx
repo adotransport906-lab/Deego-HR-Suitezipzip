@@ -32,13 +32,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Brand */}
-      <div className="p-5 flex items-center gap-3 border-b border-border/50">
-        <div className="h-10 flex items-center justify-center shrink-0">
-          <img src={logoImage} alt="ADO Logo" className="h-full w-auto object-contain" />
+      <div className="p-4 flex items-center gap-3 border-b border-border/50">
+        <div className="w-12 h-12 rounded-xl bg-blue-700 flex items-center justify-center shrink-0 shadow-md shadow-blue-700/30">
+          <img src={logoImage} alt="ADO Logo" className="w-10 h-10 object-contain p-0.5" />
         </div>
         <div>
           <h1 className="font-display font-bold text-sm leading-tight text-foreground">ADO Logistics Portal</h1>
-          <p className="text-xs text-muted-foreground font-medium">ADO International Transport Nepal</p>
+          <p className="text-xs text-muted-foreground font-medium leading-snug">ADO International<br />Transport Nepal</p>
         </div>
       </div>
 
