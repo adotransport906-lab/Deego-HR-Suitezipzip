@@ -258,7 +258,7 @@ export default function Attendance() {
           <label className="text-xs font-semibold text-muted-foreground">Year</label>
           <Select value={selectedYear.toString()} onValueChange={v => setSelectedYear(Number(v))}>
             <SelectTrigger className="w-28 rounded-xl"><SelectValue /></SelectTrigger>
-            <SelectContent>{Array.from({ length: 10 }, (_, i) => 2078 + i).map(y => <SelectItem key={y} value={y.toString()}>{y} B.S.</SelectItem>)}</SelectContent>
+            <SelectContent>{Array.from({ length: 23 }, (_, i) => 2078 + i).map(y => <SelectItem key={y} value={y.toString()}>{y} B.S.</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div className="space-y-1">

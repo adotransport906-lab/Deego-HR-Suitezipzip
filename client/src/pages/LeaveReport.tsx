@@ -80,7 +80,7 @@ export default function LeaveReport() {
 
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="flex gap-2 shrink-0 overflow-x-auto pb-2">
-          {Array.from({ length: 10 }, (_, i) => 2078 + i).map(year => (
+          {Array.from({ length: 23 }, (_, i) => 2078 + i).map(year => (
             <Button
               key={year}
               variant={selectedYear === year ? "default" : "outline"}
