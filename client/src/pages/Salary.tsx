@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, Search, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
+import { DollarSign, Search, ChevronLeft, ChevronRight, Wallet, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@shared/schema";
 
@@ -69,8 +69,8 @@ export default function Salary() {
 
   function openPayDialog(emp: Employee) {
     const existing = getSalaryRecord(emp.id);
-    // Pre-fill Total Salary from employee's salary field if no record exists yet
-    const defaultTotal = existing?.totalSalary !== undefined
+    // Use existing totalSalary if it is > 0, otherwise fall back to the employee's base salary
+    const defaultTotal = (existing?.totalSalary && existing.totalSalary > 0)
       ? existing.totalSalary.toString()
       : (emp.salary ? emp.salary.toString() : "");
     setFormTotal(defaultTotal);
@@ -79,6 +79,20 @@ export default function Salary() {
     setFormPaymentDate(existing?.paymentDate ?? "");
     setFormNotes(existing?.notes ?? "");
     setPayDialog(emp);
+  }
+
+  async function handleCancelAll(emp: Employee) {
+    if (!confirm(`Cancel and clear all salary data for ${emp.name} — ${monthName} ${year}?`)) return;
+    await setSalaryMutation.mutateAsync({
+      employeeId: emp.id,
+      nepaliYear: year,
+      nepaliMonth: month,
+      totalSalary: 0,
+      providedSalary: 0,
+      paymentType: null,
+      paymentDate: null,
+      notes: null,
+    } as any);
   }
 
   async function handleSave() {
@@ -253,16 +267,31 @@ export default function Salary() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-3 rounded-lg text-xs"
-                        onClick={() => openPayDialog(emp)}
-                        data-testid={`button-pay-${emp.id}`}
-                      >
-                        <DollarSign className="w-3 h-3 mr-1" />
-                        {rec ? "Edit" : "Pay"}
-                      </Button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-3 rounded-lg text-xs"
+                          onClick={() => openPayDialog(emp)}
+                          data-testid={`button-pay-${emp.id}`}
+                        >
+                          <DollarSign className="w-3 h-3 mr-1" />
+                          {rec ? "Edit" : "Pay"}
+                        </Button>
+                        {rec && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 rounded-lg text-xs text-red-500 hover:bg-red-50 hover:text-red-700"
+                            onClick={() => handleCancelAll(emp)}
+                            data-testid={`button-cancel-${emp.id}`}
+                            title="Cancel Everything"
+                          >
+                            <XCircle className="w-3.5 h-3.5 mr-1" />
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
