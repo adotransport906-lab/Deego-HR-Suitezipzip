@@ -33,7 +33,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col h-full">
       {/* Brand */}
       <div className="p-4 flex items-center gap-3 border-b border-border/50">
-        <div className="w-16 h-16 rounded-xl bg-blue-700 flex items-center justify-center shrink-0 shadow-md shadow-blue-700/30 p-1.5">
+        <div className="w-13 h-13 rounded-xl bg-blue-700 flex items-center justify-center shrink-0 shadow-md shadow-blue-700/30 p-1.5" style={{width:"52px",height:"52px"}}>
           <div className="w-full h-full bg-white rounded-lg flex items-center justify-center p-1">
             <img src={logoImage} alt="ADO Logo" className="w-full h-full object-contain" />
           </div>
