@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { LogIn, Eye, EyeOff } from "lucide-react";
-import logoImage from "@assets/image_1778143217552.png";
+import logoImage from "@assets/image_1778224411714.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -40,8 +40,8 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Logo + Brand */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-12 rounded-2xl bg-blue-700 mb-4 shadow-lg shadow-blue-700/30">
-            <img src={logoImage} alt="ADO Logo" className="w-full h-full object-contain p-1" />
+          <div className="inline-flex items-center justify-center mb-4">
+            <img src={logoImage} alt="ADO Logo" className="h-16 w-auto object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">ADO Logistics Portal</h1>
           <p className="text-muted-foreground text-sm mt-1">ADO International Transport Nepal</p>

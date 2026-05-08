@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import logoImage from "@assets/image_1778143217552.png";
+import logoImage from "@assets/image_1778224411714.png";
 
 const NAV_ITEMS = [
   { name: "Dashboard",       href: "/dashboard", icon: LayoutDashboard },
@@ -33,8 +33,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col h-full">
       {/* Brand */}
       <div className="p-5 flex items-center gap-3 border-b border-border/50">
-        <div className="w-14 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-blue-700 shrink-0">
-          <img src={logoImage} alt="ADO Logo" className="w-full h-full object-contain" />
+        <div className="h-10 flex items-center justify-center shrink-0">
+          <img src={logoImage} alt="ADO Logo" className="h-full w-auto object-contain" />
         </div>
         <div>
           <h1 className="font-display font-bold text-sm leading-tight text-foreground">ADO Logistics Portal</h1>
@@ -123,8 +123,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 border-b bg-card sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-7 rounded-lg overflow-hidden bg-blue-700 flex items-center justify-center">
-            <img src={logoImage} alt="ADO Logo" className="w-full h-full object-contain" />
+          <div className="h-7 flex items-center justify-center">
+            <img src={logoImage} alt="ADO Logo" className="h-full w-auto object-contain" />
           </div>
           <span className="font-display font-bold text-foreground text-sm">ADO Logistics Portal</span>
         </div>
