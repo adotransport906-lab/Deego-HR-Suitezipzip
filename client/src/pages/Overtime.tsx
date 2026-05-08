@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Clock, Plus, Trash2, Settings, UserPlus, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 const DEFAULT_OT_NAMES = [
   "Hari Chaudhary", "Mahesh Chaudhary", "Rakesh Dangura Tharu",
@@ -31,6 +32,13 @@ export default function Overtime() {
   const [selectedMonth, setSelectedMonth] = useState(today.month);
   const [addOpen, setAddOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+
+  function askConfirm(action: () => void) {
+    setConfirmAction(() => action);
+    setConfirmOpen(true);
+  }
 
   const [formEmpId, setFormEmpId] = useState("");
   const [formDay, setFormDay] = useState("");
@@ -233,7 +241,7 @@ export default function Overtime() {
                     <TableCell className="text-sm text-muted-foreground">{rec.remarks || "—"}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10"
-                        onClick={() => { if (confirm("Delete?")) deleteOvertime.mutate(rec.id); }}>
+                        onClick={() => askConfirm(() => deleteOvertime.mutate(rec.id))}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </TableCell>
@@ -334,6 +342,11 @@ export default function Overtime() {
           </div>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        onConfirm={() => { confirmAction?.(); setConfirmOpen(false); }}
+      />
     </div>
   );
 }

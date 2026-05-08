@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UtensilsCrossed, Plus, Trash2, TrendingUp, CalendarDays, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export default function KitchenExpenses() {
   const today = getCurrentNepaliDate();
@@ -18,6 +19,13 @@ export default function KitchenExpenses() {
   const [selectedDay, setSelectedDay] = useState<string>("all");
   const [addOpen, setAddOpen] = useState(false);
   const [filterItem, setFilterItem] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+
+  function askConfirm(action: () => void) {
+    setConfirmAction(() => action);
+    setConfirmOpen(true);
+  }
 
   // Monthly calendar state
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -228,7 +236,7 @@ export default function KitchenExpenses() {
                   <TableCell className="text-sm text-muted-foreground">{exp.remarks || "—"}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10"
-                      onClick={() => { if (confirm("Delete?")) deleteExpense.mutate(exp.id); }}>
+                      onClick={() => askConfirm(() => deleteExpense.mutate(exp.id))}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </TableCell>
@@ -377,7 +385,7 @@ export default function KitchenExpenses() {
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="font-bold text-primary text-sm">Rs. {exp.amount.toLocaleString()}</span>
                       <Button variant="ghost" size="icon" className="w-7 h-7 text-destructive hover:bg-destructive/10"
-                        onClick={() => { if (confirm("Delete this expense?")) { deleteExpense.mutate(exp.id); } }}>
+                        onClick={() => askConfirm(() => deleteExpense.mutate(exp.id))}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -451,6 +459,11 @@ export default function KitchenExpenses() {
           </form>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        onConfirm={() => { confirmAction?.(); setConfirmOpen(false); }}
+      />
     </div>
   );
 }

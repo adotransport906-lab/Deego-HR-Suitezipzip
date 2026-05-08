@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Calendar as CalendarIcon, Plus, Info, X, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export default function LeaveReport() {
   const [selectedYear, setSelectedYear] = useState(2082);
@@ -17,6 +18,13 @@ export default function LeaveReport() {
   const [detailDay, setDetailDay] = useState<number | null>(null);
   const [multiSelectDay, setMultiSelectDay] = useState<number | null>(null);
   const [selectedEmployees, setSelectedEmployees] = useState<Set<number>>(new Set());
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+
+  function askConfirm(action: () => void) {
+    setConfirmAction(() => action);
+    setConfirmOpen(true);
+  }
 
   const { data: employees } = useEmployees();
   const { data: leaves } = useLeaves();
@@ -184,15 +192,13 @@ export default function LeaveReport() {
                     size="icon"
                     className="text-destructive hover:bg-destructive/10"
                     onClick={() => {
-                      if (confirm("Remove this leave record? This will also remove the linked attendance record.")) {
-                        deleteLeave.mutate({
-                          id: leave.id,
-                          employeeId: leave.employeeId,
-                          nepaliYear: leave.nepaliYear,
-                          nepaliMonth: leave.nepaliMonth,
-                          day: leave.day
-                        });
-                      }
+                      askConfirm(() => deleteLeave.mutate({
+                        id: leave.id,
+                        employeeId: leave.employeeId,
+                        nepaliYear: leave.nepaliYear,
+                        nepaliMonth: leave.nepaliMonth,
+                        day: leave.day
+                      }));
                     }}
                   >
                     <X className="w-5 h-5" />
@@ -270,6 +276,11 @@ export default function LeaveReport() {
           </div>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        onConfirm={() => { confirmAction?.(); setConfirmOpen(false); }}
+      />
     </div>
   );
 }

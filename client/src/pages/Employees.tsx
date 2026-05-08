@@ -12,6 +12,7 @@ import { NEPALI_MONTHS } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@shared/schema";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 const CUSTOM_FIELDS_KEY = "ado_employee_custom_fields";
 
@@ -66,6 +67,15 @@ export default function Employees() {
   const [customFieldDefs, setCustomFieldDefs] = useState<CustomFieldDef[]>(loadCustomFields);
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldType, setNewFieldType] = useState<"text" | "number" | "date">("text");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+  const [confirmDescription, setConfirmDescription] = useState("Would you like to delete it?");
+
+  function askConfirm(description: string, action: () => void) {
+    setConfirmDescription(description);
+    setConfirmAction(() => action);
+    setConfirmOpen(true);
+  }
 
   const [importRows, setImportRows] = useState<ImportedRow[]>([]);
   const [importText, setImportText] = useState("");
@@ -305,10 +315,10 @@ export default function Employees() {
           <span className="text-sm font-medium text-red-700">{selectedIds.size} selected</span>
           <Button size="sm" variant="destructive" className="rounded-xl ml-auto"
             onClick={() => {
-              if (confirm(`Delete ${selectedIds.size} employees?`)) {
+              askConfirm(`Would you like to delete ${selectedIds.size} employee(s)?`, () => {
                 selectedIds.forEach(id => deleteEmployee.mutate(id));
                 setSelectedIds(new Set());
-              }
+              });
             }}>
             <Trash2 className="w-4 h-4 mr-1.5" /> Delete Selected
           </Button>
@@ -388,7 +398,7 @@ export default function Employees() {
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
                         <Button variant="ghost" size="icon" className="w-7 h-7 text-destructive hover:bg-destructive/10"
-                          onClick={() => { if (confirm(`Remove ${emp.name}?`)) deleteEmployee.mutate(emp.id); }}>
+                          onClick={() => askConfirm(`Would you like to delete ${emp.name}?`, () => deleteEmployee.mutate(emp.id))}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </div>
@@ -609,6 +619,12 @@ export default function Employees() {
           </div>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        description={confirmDescription}
+        onConfirm={() => { confirmAction?.(); setConfirmOpen(false); }}
+      />
     </div>
   );
 }

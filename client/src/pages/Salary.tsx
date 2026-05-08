@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { DollarSign, Search, ChevronLeft, ChevronRight, Wallet, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Employee } from "@shared/schema";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 const PAYMENT_TYPES = [
   { value: "cash", label: "Cash" },
@@ -39,6 +40,15 @@ export default function Salary() {
   const [month, setMonth] = useState(today.month);
   const [search, setSearch] = useState("");
   const [payDialog, setPayDialog] = useState<Employee | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+  const [confirmDescription, setConfirmDescription] = useState("Would you like to delete it?");
+
+  function askConfirm(description: string, action: () => void) {
+    setConfirmDescription(description);
+    setConfirmAction(() => action);
+    setConfirmOpen(true);
+  }
 
   const [formTotal, setFormTotal] = useState("");
   const [formProvided, setFormProvided] = useState("");
@@ -81,18 +91,19 @@ export default function Salary() {
     setPayDialog(emp);
   }
 
-  async function handleCancelAll(emp: Employee) {
-    if (!confirm(`Cancel and clear all salary data for ${emp.name} — ${monthName} ${year}?`)) return;
-    await setSalaryMutation.mutateAsync({
-      employeeId: emp.id,
-      nepaliYear: year,
-      nepaliMonth: month,
-      totalSalary: 0,
-      providedSalary: 0,
-      paymentType: null,
-      paymentDate: null,
-      notes: null,
-    } as any);
+  function handleCancelAll(emp: Employee) {
+    askConfirm(`Would you like to clear all salary data for ${emp.name} — ${monthName} ${year}?`, async () => {
+      await setSalaryMutation.mutateAsync({
+        employeeId: emp.id,
+        nepaliYear: year,
+        nepaliMonth: month,
+        totalSalary: 0,
+        providedSalary: 0,
+        paymentType: null,
+        paymentDate: null,
+        notes: null,
+      } as any);
+    });
   }
 
   async function handleSave() {
@@ -393,6 +404,12 @@ export default function Salary() {
           </div>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        description={confirmDescription}
+        onConfirm={() => { confirmAction?.(); setConfirmOpen(false); }}
+      />
     </div>
   );
 }

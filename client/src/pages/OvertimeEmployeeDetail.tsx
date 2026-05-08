@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Clock, Pencil, Check, X, Trash2, Building2, User, Briefcase, Hash } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Overtime } from "@shared/schema";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 export default function OvertimeEmployeeDetail() {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +25,13 @@ export default function OvertimeEmployeeDetail() {
   const [editFields, setEditFields] = useState<{ overtimeHours: string; checkInTime: string; checkOutTime: string; remarks: string }>({
     overtimeHours: "", checkInTime: "", checkOutTime: "", remarks: ""
   });
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+
+  function askConfirm(action: () => void) {
+    setConfirmAction(() => action);
+    setConfirmOpen(true);
+  }
 
   const { data: employees } = useEmployees();
   const { data: overtimeData } = useOvertime();
@@ -212,7 +220,7 @@ export default function OvertimeEmployeeDetail() {
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" className="w-7 h-7 text-destructive hover:bg-destructive/10"
-                            onClick={() => { if (confirm("Delete this record?")) deleteOvertime.mutate(rec.id); }}>
+                            onClick={() => askConfirm(() => deleteOvertime.mutate(rec.id))}>
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>
@@ -232,6 +240,11 @@ export default function OvertimeEmployeeDetail() {
           </Table>
         </div>
       </div>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        onConfirm={() => { confirmAction?.(); setConfirmOpen(false); }}
+      />
     </div>
   );
 }
