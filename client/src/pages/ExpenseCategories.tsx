@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useExpenseCategories, useCreateExpenseCategory, useDeleteExpenseCategory } from "@/hooks/use-expense-categories";
+import { useExpenseCategories, useCreateExpenseCategory, useDeleteExpenseCategory, useAllCategoryExpenses } from "@/hooks/use-expense-categories";
 import { useKitchenExpenses } from "@/hooks/use-kitchen";
 import { useOfficeExpenses } from "@/hooks/use-office";
 import { useSalaries } from "@/hooks/use-salary";
@@ -80,6 +80,7 @@ export default function ExpenseCategories() {
   const { data: kitchenExpenses = [] } = useKitchenExpenses();
   const { data: officeExpenses = [] } = useOfficeExpenses();
   const { data: salaries = [] } = useSalaries();
+  const { data: allCategoryExpenses = [] } = useAllCategoryExpenses();
 
   const monthName = NEPALI_MONTHS.find(m => m.value === today.month)?.label ?? "";
 
@@ -94,6 +95,13 @@ export default function ExpenseCategories() {
   function salaryTotal() {
     return salaries.filter((s: any) => s.nepaliYear === today.year && s.nepaliMonth === today.month)
       .reduce((s: number, e: any) => s + (e.providedSalary ?? 0), 0);
+  }
+  function customCategoryTotal(catId?: number) {
+    const filtered = allCategoryExpenses.filter((e: any) =>
+      e.nepaliYear === today.year && e.nepaliMonth === today.month &&
+      (catId === undefined || e.categoryId === catId)
+    );
+    return filtered.reduce((s: number, e: any) => s + (e.amount ?? 0), 0);
   }
 
   const builtinTotals: Record<string, number> = {
@@ -126,7 +134,8 @@ export default function ExpenseCategories() {
     setConfirmOpen(true);
   }
 
-  const totalExpenses = builtinTotals.kitchen + builtinTotals.office + builtinTotals.salary;
+  const customTotal = customCategoryTotal();
+  const totalExpenses = builtinTotals.kitchen + builtinTotals.office + builtinTotals.salary + customTotal;
 
   return (
     <div className="space-y-6">
@@ -264,7 +273,13 @@ export default function ExpenseCategories() {
                     </button>
                   </div>
                   <h3 className={cn("font-bold text-base leading-tight mb-1", c.text)}>{cat.name}</h3>
-                  <p className="text-xs text-muted-foreground mb-4 leading-relaxed">{cat.description || "Custom expense category"}</p>
+                  <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{cat.description || "Custom expense category"}</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">This Month</p>
+                      <p className={cn("text-lg font-bold", c.text)}>Rs. {customCategoryTotal(cat.id).toLocaleString()}</p>
+                    </div>
+                  </div>
                   <Button
                     size="sm"
                     onClick={() => setLocation(`/expenses/${cat.id}`)}

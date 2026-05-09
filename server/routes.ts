@@ -231,6 +231,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   // ─── Category Expenses ────────────────────────────────────
+  app.get("/api/category-expenses/all", async (_req, res) => {
+    try { res.json(await storage.getAllCategoryExpenses()); }
+    catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
   app.get("/api/category-expenses", async (req, res) => {
     try {
       const categoryId = Number(req.query.categoryId);

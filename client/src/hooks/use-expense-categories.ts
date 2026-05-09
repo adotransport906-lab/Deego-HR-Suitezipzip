@@ -88,6 +88,19 @@ export function useDeleteCategoryField() {
   });
 }
 
+// ── All Category Expenses (for hub totals) ──────────────────────
+
+export function useAllCategoryExpenses() {
+  return useQuery<any[]>({
+    queryKey: [EXPENSES_KEY, "all"],
+    queryFn: async () => {
+      const res = await fetch(`${EXPENSES_KEY}/all`, { credentials: "include" });
+      if (!res.ok) return [];
+      return safeJson(res);
+    }
+  });
+}
+
 // ── Category Expenses ───────────────────────────────────────────
 
 export function useCategoryExpenses(categoryId: number) {

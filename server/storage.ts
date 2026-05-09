@@ -212,6 +212,13 @@ export class SupabaseStorage implements IStorage {
       return mapRows(data ?? []);
     } catch { return []; }
   }
+  async getAllCategoryExpenses() {
+    try {
+      const { data, error } = await supabaseAdmin.from("category_expenses").select("*").order("id");
+      if (error) return [];
+      return mapRows(data ?? []);
+    } catch { return []; }
+  }
   async createCategoryExpense(data: Record<string, any>) { return dbInsert("category_expenses", data); }
   async deleteCategoryExpense(id: number) { return dbDelete("category_expenses", id); }
 
