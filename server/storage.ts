@@ -185,6 +185,36 @@ export class SupabaseStorage implements IStorage {
   async updateSalary(id: number, salary: Partial<InsertSalary>) { return dbUpdate("salaries", id, salary); }
   async deleteSalary(id: number) { return dbDelete("salaries", id); }
 
+  // ── Expense Categories ─────────────────────────────────────
+  async getExpenseCategories() {
+    try { return await dbSelect("expense_categories", "id"); }
+    catch { return []; }
+  }
+  async createExpenseCategory(data: Record<string, any>) { return dbInsert("expense_categories", data); }
+  async deleteExpenseCategory(id: number) { return dbDelete("expense_categories", id); }
+
+  // ── Category Fields ────────────────────────────────────────
+  async getCategoryFields(categoryId: number) {
+    try {
+      const { data, error } = await supabaseAdmin.from("category_fields").select("*").eq("category_id", categoryId).order("sort_order");
+      if (error) return [];
+      return mapRows(data ?? []);
+    } catch { return []; }
+  }
+  async createCategoryField(data: Record<string, any>) { return dbInsert("category_fields", data); }
+  async deleteCategoryField(id: number) { return dbDelete("category_fields", id); }
+
+  // ── Category Expenses ──────────────────────────────────────
+  async getCategoryExpenses(categoryId: number) {
+    try {
+      const { data, error } = await supabaseAdmin.from("category_expenses").select("*").eq("category_id", categoryId).order("id");
+      if (error) return [];
+      return mapRows(data ?? []);
+    } catch { return []; }
+  }
+  async createCategoryExpense(data: Record<string, any>) { return dbInsert("category_expenses", data); }
+  async deleteCategoryExpense(id: number) { return dbDelete("category_expenses", id); }
+
   // ── Profiles ───────────────────────────────────────────────
   async getProfiles() { return dbSelect("profiles", "created_at"); }
   async createProfile(profile: { id: string; email: string; fullName?: string; role: string }) {

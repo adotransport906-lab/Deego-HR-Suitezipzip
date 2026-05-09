@@ -20,6 +20,8 @@ import OfficeExpenses from "@/pages/OfficeExpenses";
 import Overall from "@/pages/Overall";
 import Salary from "@/pages/Salary";
 import AdminUsers from "@/pages/AdminUsers";
+import ExpenseCategories from "@/pages/ExpenseCategories";
+import CategoryDetail from "@/pages/CategoryDetail";
 
 function AppRoutes() {
   return (
@@ -108,6 +110,26 @@ function AppRoutes() {
             <NepaliDateDisplay />
             <Layout>
               <Salary />
+            </Layout>
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/expenses">
+        {() => (
+          <ProtectedRoute>
+            <NepaliDateDisplay />
+            <Layout>
+              <ExpenseCategories />
+            </Layout>
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/expenses/:id">
+        {() => (
+          <ProtectedRoute>
+            <NepaliDateDisplay />
+            <Layout>
+              <CategoryDetail />
             </Layout>
           </ProtectedRoute>
         )}

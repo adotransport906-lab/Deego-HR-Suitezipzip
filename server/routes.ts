@@ -199,6 +199,54 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     catch (err: any) { res.status(400).json({ message: err.message }); }
   });
 
+  // ─── Expense Categories ───────────────────────────────────
+  app.get("/api/expense-categories", async (_req, res) => {
+    try { res.json(await storage.getExpenseCategories()); }
+    catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+  app.post("/api/expense-categories", async (req, res) => {
+    try { res.status(201).json(await storage.createExpenseCategory(req.body)); }
+    catch (err: any) { res.status(400).json({ message: err.message }); }
+  });
+  app.delete("/api/expense-categories/:id", async (req, res) => {
+    try { await storage.deleteExpenseCategory(Number(req.params.id)); res.status(204).send(); }
+    catch (err: any) { res.status(400).json({ message: err.message }); }
+  });
+
+  // ─── Category Fields ──────────────────────────────────────
+  app.get("/api/category-fields", async (req, res) => {
+    try {
+      const categoryId = Number(req.query.categoryId);
+      if (!categoryId) return res.json([]);
+      res.json(await storage.getCategoryFields(categoryId));
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+  app.post("/api/category-fields", async (req, res) => {
+    try { res.status(201).json(await storage.createCategoryField(req.body)); }
+    catch (err: any) { res.status(400).json({ message: err.message }); }
+  });
+  app.delete("/api/category-fields/:id", async (req, res) => {
+    try { await storage.deleteCategoryField(Number(req.params.id)); res.status(204).send(); }
+    catch (err: any) { res.status(400).json({ message: err.message }); }
+  });
+
+  // ─── Category Expenses ────────────────────────────────────
+  app.get("/api/category-expenses", async (req, res) => {
+    try {
+      const categoryId = Number(req.query.categoryId);
+      if (!categoryId) return res.json([]);
+      res.json(await storage.getCategoryExpenses(categoryId));
+    } catch (err: any) { res.status(500).json({ message: err.message }); }
+  });
+  app.post("/api/category-expenses", async (req, res) => {
+    try { res.status(201).json(await storage.createCategoryExpense(req.body)); }
+    catch (err: any) { res.status(400).json({ message: err.message }); }
+  });
+  app.delete("/api/category-expenses/:id", async (req, res) => {
+    try { await storage.deleteCategoryExpense(Number(req.params.id)); res.status(204).send(); }
+    catch (err: any) { res.status(400).json({ message: err.message }); }
+  });
+
   // ─── Admin: User Management (admin-only) ──────────────────
   app.get("/api/admin/users", requireAdmin, async (_req, res) => {
     try {

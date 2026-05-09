@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import {
-  Users, Calendar, Building2, Menu, BarChart3, ClipboardList,
-  ChefHat, LayoutDashboard, Briefcase, Wallet, ShieldCheck, LogOut, ChevronDown
+  Users, Calendar, Menu, BarChart3, ClipboardList,
+  LayoutDashboard, ShieldCheck, LogOut, Layers
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -10,14 +10,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import logoImage from "@assets/image_1778224411714.png";
 
 const NAV_ITEMS = [
-  { name: "Dashboard",       href: "/dashboard", icon: LayoutDashboard },
-  { name: "Employees",       href: "/employees",  icon: Users },
-  { name: "Attendance",      href: "/attendance", icon: ClipboardList },
-  { name: "Leave Report",    href: "/leaves",     icon: Calendar },
-  { name: "Meal / Kitchen Expenses", href: "/kitchen", icon: ChefHat },
-  { name: "Office Expenses", href: "/office",     icon: Briefcase },
-  { name: "Salary",          href: "/salary",     icon: Wallet },
-  { name: "Overall Report",  href: "/overall",    icon: BarChart3 },
+  { name: "Dashboard",          href: "/dashboard", icon: LayoutDashboard },
+  { name: "Employees",          href: "/employees",  icon: Users },
+  { name: "Attendance",         href: "/attendance", icon: ClipboardList },
+  { name: "Leave Report",       href: "/leaves",     icon: Calendar },
+  { name: "Expense Categories", href: "/expenses",   icon: Layers },
+  { name: "Overall Report",     href: "/overall",    icon: BarChart3 },
 ];
 
 const ADMIN_NAV_ITEMS = [
@@ -47,7 +45,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
-          const isActive = location === item.href || (location === "/" && item.href === "/dashboard");
+          const isActive = location === item.href || (location === "/" && item.href === "/dashboard") || (item.href === "/expenses" && location.startsWith("/expenses"));
           return (
             <Link
               key={item.name}
